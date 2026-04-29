@@ -16,14 +16,14 @@ Aplicação web de gerenciamento de cronograma e orçamento de projetos de inves
 ## Estrutura do Projeto
 
 ```
-Carnaúba/
+carnauba-prototipo/
 ├── index.html          # Ponto de entrada — carrega React, Babel e CSS
 ├── app.jsx             # Componentes principais: App, Sidebar, GanttChart, barras de KPI
 ├── item-modal.jsx      # Modal de criação/edição de itens e etapas
-├── colors_and_type.css # Sistema de design: tokens de cor, tipografia e espaçamento
-├── fonts/              # Família tipográfica Aptos completa (28 arquivos)
-├── assets/             # Logotipos SVG (claro e escuro)
-└── _infos/             # Arquivos de referência internos (não versionados)
+└── design-system/      # Submodule → carnauba-investimentos/carnauba-design-system
+    ├── colors_and_type.css   # Tokens de cor, tipografia e espaçamento
+    ├── fonts/                # Família tipográfica Aptos completa
+    └── assets/               # Logotipos SVG (claro e escuro)
 ```
 
 ## Tecnologias
@@ -32,9 +32,32 @@ Carnaúba/
 |---|---|
 | UI | React 18.3.1 (CDN, UMD) |
 | JSX | Babel Standalone 7.29.0 |
-| Estilos | CSS puro com variáveis customizadas |
+| Estilos | CSS puro com variáveis customizadas (via Design System) |
 | Build | Nenhum — executa direto no navegador |
 | Backend | Nenhum — SPA estática |
+
+## Design System
+
+Os tokens visuais (cores, tipografia, espaçamento, sombras) vêm do repositório [carnauba-design-system](https://github.com/carnauba-investimentos/carnauba-design-system), incluído aqui como git submodule em `design-system/`. O arquivo `design-system/colors_and_type.css` é a única fonte de verdade para estilos — nunca edite diretamente no prototipo.
+
+- **Paleta primária:** Navy `#1B3C5F`, Blue `#73A9C7`, Sage `#A9C8BF`
+- **Semânticas:** Success `#3A8F6A`, Warning `#C08A2A`, Error `#B84040`
+- **Tipografia:** família Aptos (Display, Standard, Narrow, Serif, Mono) em pesos 300–900
+- **Escala de espaçamento:** 4 px a 96 px
+
+## Como clonar (nova máquina)
+
+O projeto usa um git submodule. Use a flag `--recurse-submodules` para clonar tudo de uma vez:
+
+```bash
+git clone --recurse-submodules https://github.com/carnauba-investimentos/carnauba-prototipo.git
+```
+
+Se já clonou sem a flag e a pasta `design-system/` está vazia:
+
+```bash
+git submodule update --init
+```
 
 ## Como executar
 
@@ -56,6 +79,17 @@ Abra `http://localhost:8080` (ou a porta configurada) no navegador.
 
 > **Nota:** o arquivo `index.html` não pode ser aberto diretamente via `file://` devido às restrições de CORS no carregamento de módulos JS locais. Use sempre um servidor HTTP local.
 
+## Atualizar o Design System
+
+Quando o repositório `carnauba-design-system` receber atualizações, execute dentro desta pasta:
+
+```bash
+git submodule update --remote design-system
+git add design-system
+git commit -m "Update design system to latest"
+git push
+```
+
 ## Modelo de dados
 
 Cada item do cronograma segue a estrutura abaixo:
@@ -75,16 +109,6 @@ Item
         ├── orcamento   — valor orçado (BRL)
         └── investimentoRealizado — valor realizado (BRL)
 ```
-
-## Design System
-
-O arquivo [colors_and_type.css](colors_and_type.css) centraliza todos os tokens visuais:
-
-- **Paleta primária:** Navy `#1B3C5F`, Blue `#73A9C7`, Sage `#A9C8BF`
-- **Semânticas:** Success `#3A8F6A`, Warning `#C08A2A`, Error `#B84040`
-- **Tipografia:** família Aptos (Display, Standard, Narrow, Serif, Mono) em pesos 300–900
-- **Escala de espaçamento:** 4 px a 96 px
-- **Sombras, raios de borda e transições** padronizados
 
 ## Localização
 
