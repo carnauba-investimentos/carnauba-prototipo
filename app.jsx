@@ -130,6 +130,63 @@ const PortalTooltip = ({ anchorRect, children }) => {
   );
 };
 
+// ── StepBar (gantt step segment with portal tooltip) ──────────────
+const StepBar = ({ etapa, eIdx, ex, ew, by, bh, onItemClick }) => {
+  const [anchorRect, setAnchorRect] = useState(null);
+  const ref = useRef(null);
+
+  const totalDays = diffDays(etapa.dataInicio, etapa.dataFim);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const start = etapa.dataInicio ? new Date(etapa.dataInicio + 'T00:00:00') : null;
+  const spentDays = start ? Math.min(totalDays, Math.max(0, Math.floor((today - start) / 86400000))) : 0;
+  const budget = Number(etapa.orcamento) || 0;
+  const spent = Number(etapa.investimentoRealizado) || 0;
+
+  const tooltip = (
+    <div>
+      <div style={{ fontWeight: 700, marginBottom: 6, color: 'rgba(255,255,255,0.9)', borderBottom: '1px solid rgba(255,255,255,0.12)', paddingBottom: 5 }}>
+        {etapa.titulo || `Etapa ${eIdx + 1}`}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, fontFamily: 'var(--font-mono)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+          <span style={{ opacity: 0.6 }}>Período</span>
+          <span>{fmtDatePT(etapa.dataInicio)} → {fmtDatePT(etapa.dataFim)}</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+          <span style={{ opacity: 0.6 }}>Duração</span>
+          <span>{spentDays}/{totalDays} dias</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+          <span style={{ opacity: 0.6 }}>Gastos</span>
+          <span>{budget > 0 ? `${fmtBRL(spent)} / ${fmtBRL(budget)}` : spent > 0 ? fmtBRL(spent) : '—'}</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div
+      ref={ref}
+      onClick={onItemClick}
+      onMouseEnter={(e) => { ref.current && setAnchorRect(ref.current.getBoundingClientRect()); e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; }}
+      onMouseLeave={(e) => { setAnchorRect(null); e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
+      style={{
+        position: 'absolute', left: ex, top: by,
+        width: ew, height: bh,
+        background: etapa.feito ? 'var(--color-success)' : 'rgba(212,228,224,0.7)',
+        border: etapa.feito ? '1px solid var(--color-success)' : '1px solid var(--color-sage-80)',
+        borderRadius: 5,
+        zIndex: 4,
+        cursor: 'pointer', overflow: 'hidden',
+        transition: 'opacity 0.15s, transform 0.1s, box-shadow 0.1s',
+        boxShadow: 'var(--shadow-sm)'
+      }}
+    >
+      {anchorRect && <PortalTooltip anchorRect={anchorRect}>{tooltip}</PortalTooltip>}
+    </div>
+  );
+};
+
 // ── BarRow (single KPI bar with portal tooltip) ────────────────────
 const BarRow = ({ label, pct, valueFmt, overrun, tooltipContent }) => {
   const [anchorRect, setAnchorRect] = useState(null);
@@ -228,7 +285,7 @@ const ThreeProgressBars = ({ item }) => {
       return (
         <div key={v.number} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, opacity: isLatest ? 1 : 0.65, fontFamily: 'var(--font-mono)' }}>
             <span>v{v.number}{isLatest ? ' (atual)' : ''}</span>
-            <span>{d !== null ? `${d} dias` : '—'}{isLatest && r ? ` · passados ${daysPassed}d` : ''}</span>
+            <span>{d !== null ? `${d} dias` : '—'}</span>
           </div>);
 
     })}
@@ -255,7 +312,6 @@ const ThreeProgressBars = ({ item }) => {
             <span>v{v.number}{isLatest ? ' (atual)' : ''}</span>
             <span>
               {b > 0 ? fmtBRL(b) : '—'}
-              {isLatest && s > 0 ? ` · gasto ${fmtBRL(s)}` : ''}
             </span>
           </div>);
 
@@ -531,7 +587,7 @@ const GanttChart = ({ item, zoom, onItemClick }) => {
 
       {/* ── Timeline ────────────────────────────────── */}
       <div ref={scrollRef} style={{ flex: 1, overflowX: 'auto', overflowY: 'hidden', position: 'relative' }}>
-        <div style={{ width: totalWidth, minHeight: '100%', position: 'relative' }}>
+        <div style={{ width: totalWidth, minHeight: '100%', position: 'relative', display: 'flex', flexDirection: 'column' }}>
 
           {/* Header */}
           <div style={{
@@ -572,7 +628,7 @@ const GanttChart = ({ item, zoom, onItemClick }) => {
           </div>
 
           {/* Row body */}
-          <div style={{ position: 'relative', height: ROW_H }}>
+          <div style={{ position: 'relative', minHeight: ROW_H, flex: 1 }}>
             {/* Grid */}
             {cols.map((col, i) =>
             <div key={i} style={{
@@ -610,7 +666,7 @@ const GanttChart = ({ item, zoom, onItemClick }) => {
               if (!range) return null;
 
               const bx = getX(range.start);
-              const bw = getW(range.start, range.end);
+              const bw = getW(range.start, range.end) + PX_DAY;
               const by = barY(vIdx, item.versions.length, ROW_H);
               const bh = isLatest ? MAIN_BAR_H : PREV_BAR_H;
 
@@ -618,61 +674,76 @@ const GanttChart = ({ item, zoom, onItemClick }) => {
 
               return (
                 <React.Fragment key={v.number}>
-                  <div
-                    onClick={onItemClick}
-                    title={`v${v.number} · ${fmtDatePT(range.start)} → ${fmtDatePT(range.end)} · ${diffDays(range.start, range.end)} dias`}
-                    style={{
-                      position: 'absolute', left: bx, top: by,
-                      width: bw, height: bh,
-                      background: isLatest ? '#B9D4E3' : '#D1D9E1',
-                      border: isLatest ? '1px solid #B9D4E3' : 'none',
-                      borderRadius: isLatest ? 5 : 3,
-                      zIndex: isLatest ? 3 : 2,
-                      cursor: 'pointer', overflow: 'hidden',
-
-                      transition: 'opacity 0.15s, transform 0.1s, box-shadow 0.1s', boxShadow: "var(--shadow-sm)"
-                    }}
-                    onMouseEnter={(e) => {isLatest ? (e.currentTarget.style.transform = 'translateY(-1px)', e.currentTarget.style.boxShadow = 'var(--shadow-md)') : e.currentTarget.style.opacity = '0.7';}}
-                    onMouseLeave={(e) => {e.currentTarget.style.transform = '';e.currentTarget.style.boxShadow = 'var(--shadow-sm)';e.currentTarget.style.opacity = '1';}}>
-                    
-                    {/* Sage fill = done% */}
-                    {isLatest && vProg > 0 &&
-                    <div style={{
-                      position: 'absolute', left: 0, top: 0,
-                      width: `${vProg}%`, height: '100%',
-                      background: '#73A9C7',
-                      borderRadius: vProg === 100 ? 4 : '4px 0 0 4px',
-                      transition: 'width 0.35s var(--ease-out)'
-                    }} />
-                    }
-                    {/* Labels — absolute so they sit above the fill */}
-                    <div style={{
-                      position: 'absolute', inset: 0,
-                      display: 'flex', alignItems: 'center',
-                      padding: '0 7px', overflow: 'hidden'
+                  {/* Label left of bar */}
+                  <div style={{
+                    position: 'absolute', top: by,
+                    left: bx,
+                    transform: 'translateX(calc(-100% - 10px))',
+                    height: bh,
+                    display: 'flex', alignItems: 'center',
+                    pointerEvents: 'none', whiteSpace: 'nowrap'
+                  }}>
+                    <span style={{
+                      fontSize: isLatest ? 13 : 11, fontWeight: isLatest ? 700 : 500,
+                      color: isLatest ? 'rgb(27, 60, 95)' : 'var(--color-gray-400)',
+                      fontFamily: 'var(--font-display)'
                     }}>
-                      <span className="mono" style={{
-                        fontSize: 11, fontWeight: 700, flexShrink: 0,
-
-                        marginRight: isLatest ? 6 : 4, color: "rgb(27, 60, 95)"
-                      }}>
-                        v{v.number}
-                      </span>
-                      {isLatest && latest?.nome &&
-                      <span style={{
-                        fontWeight: 600,
-                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1, fontSize: "14px", color: "rgb(27, 60, 95)"
-                      }}>
-                          {latest.nome}
-                        </span>
-                      }
-                      {isLatest && vProg > 0 &&
-                      <span className="mono" style={{ fontSize: 10, marginLeft: 6, flexShrink: 0, color: "rgb(27, 60, 95)" }}>
-                          {vProg}%
-                        </span>
-                      }
-                    </div>
+                      {isLatest && latest?.nome ? <>{latest.nome} · <span className="mono" style={{ fontWeight: 600, fontSize: 12 }}>v{v.number}</span></> : <span className="mono">v{v.number}</span>}
+                    </span>
                   </div>
+
+                  {/* For latest version: one segment per step + connectors */}
+                  {isLatest ? (() => {
+                    const dated = v.etapas.filter((e) => e.dataInicio && e.dataFim);
+                    return dated.map((etapa, eIdx) => {
+                      const ex = getX(etapa.dataInicio);
+                      // +1 day so the last day is fully covered
+                      const ew = Math.max(4, getW(etapa.dataInicio, etapa.dataFim) + PX_DAY - 3);
+                      const next = dated[eIdx + 1];
+                      const OVERLAP = 5;
+                      const connectorX = ex + ew - OVERLAP;
+                      const nextEx = next ? getX(next.dataInicio) : 0;
+                      const connectorW = next ? Math.max(0, nextEx + OVERLAP - connectorX) : 0;
+                      return (
+                        <React.Fragment key={eIdx}>
+                          {connectorW > 0 &&
+                            <div style={{
+                              position: 'absolute', left: connectorX, top: by,
+                              width: connectorW, height: bh,
+                              background: 'rgba(212,228,224,0.7)', borderRadius: 2,
+                              zIndex: 2, pointerEvents: 'none'
+                            }} />
+                          }
+                          <StepBar
+                            etapa={etapa}
+                            eIdx={eIdx}
+                            ex={ex}
+                            ew={ew}
+                            by={by}
+                            bh={bh}
+                            onItemClick={onItemClick}
+                          />
+                        </React.Fragment>
+                      );
+                    });
+                  })() : (
+                    /* Previous versions: single bar */
+                    <div
+                      onClick={onItemClick}
+                      title={`v${v.number} · ${fmtDatePT(range.start)} → ${fmtDatePT(range.end)} · ${diffDays(range.start, range.end)} dias`}
+                      style={{
+                        position: 'absolute', left: bx, top: by,
+                        width: bw, height: bh,
+                        background: '#D1D9E1',
+                        borderRadius: 3,
+                        zIndex: 2,
+                        cursor: 'pointer',
+                        transition: 'opacity 0.15s', boxShadow: 'var(--shadow-sm)'
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.7'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
+                    />
+                  )}
                 </React.Fragment>);
 
             })}
