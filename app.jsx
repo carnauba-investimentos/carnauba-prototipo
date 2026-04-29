@@ -21,10 +21,19 @@ const diffDays = (a, b) => {
   return Math.max(0, Math.round((new Date(b + 'T00:00:00') - new Date(a + 'T00:00:00')) / 86400000));
 };
 
+// mes is "YYYY-MM"; first day of month as ISO date
+const mesToStartISO = (mes) => mes ? `${mes}-01` : null;
+// last day of month
+const mesToEndISO = (mes) => {
+  if (!mes) return null;
+  const [y, m] = mes.split('-').map(Number);
+  return new Date(y, m, 0).toISOString().split('T')[0];
+};
+
 const getVersionRange = (version) => {
   if (!version) return null;
-  const starts = version.etapas.filter((e) => e.dataInicio).map((e) => e.dataInicio);
-  const ends = version.etapas.filter((e) => e.dataFim).map((e) => e.dataFim);
+  const starts = version.etapas.filter((e) => e.mes).map((e) => mesToStartISO(e.mes));
+  const ends = version.etapas.filter((e) => e.mes).map((e) => mesToEndISO(e.mes));
   if (!starts.length || !ends.length) return null;
   return {
     start: starts.reduce((a, b) => a < b ? a : b),
@@ -32,17 +41,13 @@ const getVersionRange = (version) => {
   };
 };
 
-const getProgress = (v) => !v || !v.etapas.length ? 0 : Math.round(v.etapas.filter((e) => e.feito).length / v.etapas.length * 100);
-const getTotalBudget = (v) => (v?.etapas || []).reduce((s, e) => s + (Number(e.orcamento) || 0), 0);
-const getTotalSpent = (v) => (v?.etapas || []).reduce((s, e) => s + (Number(e.investimentoRealizado) || 0), 0);
-
-const getDaysPassed = (version) => {
-  const range = getVersionRange(version);
-  if (!range) return 0;
-  const today = new Date();today.setHours(0, 0, 0, 0);
-  const start = new Date(range.start + 'T00:00:00');
-  return Math.max(0, Math.floor((today - start) / 86400000));
+// Progress = sum of percentual of completed steps
+const getProgress = (v) => {
+  if (!v || !v.etapas.length) return 0;
+  return Math.min(100, v.etapas.reduce((sum, e) => sum + (e.feito ? (Number(e.percentual) || 0) : 0), 0));
 };
+const getTotalBudget = (v) => (v?.etapas || []).reduce((s, e) => s + (Number(e.orcamentoMaterial) || 0) + (Number(e.orcamentoMaoDeObra) || 0), 0);
+const getTotalSpent = (v) => (v?.etapas || []).reduce((s, e) => s + (Number(e.gastoMaterial) || 0) + (Number(e.gastoMaoDeObra) || 0), 0);
 
 // ── Gantt layout constants ─────────────────────────────────────────
 const MAIN_BAR_H = 26;
@@ -135,30 +140,37 @@ const StepBar = ({ etapa, eIdx, ex, ew, by, bh, onItemClick }) => {
   const [anchorRect, setAnchorRect] = useState(null);
   const ref = useRef(null);
 
-  const totalDays = diffDays(etapa.dataInicio, etapa.dataFim);
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const start = etapa.dataInicio ? new Date(etapa.dataInicio + 'T00:00:00') : null;
-  const spentDays = start ? Math.min(totalDays, Math.max(0, Math.floor((today - start) / 86400000))) : 0;
-  const budget = Number(etapa.orcamento) || 0;
-  const spent = Number(etapa.investimentoRealizado) || 0;
+  const budgetMat = Number(etapa.orcamentoMaterial) || 0;
+  const budgetMob = Number(etapa.orcamentoMaoDeObra) || 0;
+  const gastoMat = Number(etapa.gastoMaterial) || 0;
+  const gastoMob = Number(etapa.gastoMaoDeObra) || 0;
+  const totalBudget = budgetMat + budgetMob;
+  const totalGasto = gastoMat + gastoMob;
+
+  const MONTHS_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const fmtMesShort = (mes) => {
+    if (!mes) return '—';
+    const [y, m] = mes.split('-');
+    return `${MONTHS_FULL[parseInt(m,10)-1]} ${y}`;
+  };
 
   const tooltip = (
     <div>
       <div style={{ fontWeight: 700, marginBottom: 6, color: 'rgba(255,255,255,0.9)', borderBottom: '1px solid rgba(255,255,255,0.12)', paddingBottom: 5 }}>
-        {etapa.titulo || `Etapa ${eIdx + 1}`}
+        Etapa {eIdx + 1}{etapa.mes ? ` · ${fmtMesShort(etapa.mes)}` : ''}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 3, fontFamily: 'var(--font-mono)' }}>
+        {etapa.percentual !== '' && <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+          <span style={{ opacity: 0.6 }}>Execução</span>
+          <span>{etapa.percentual}%</span>
+        </div>}
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
-          <span style={{ opacity: 0.6 }}>Período</span>
-          <span>{fmtDatePT(etapa.dataInicio)} → {fmtDatePT(etapa.dataFim)}</span>
+          <span style={{ opacity: 0.6 }}>Material</span>
+          <span>{budgetMat > 0 ? `${fmtBRL(gastoMat)} / ${fmtBRL(budgetMat)}` : gastoMat > 0 ? fmtBRL(gastoMat) : '—'}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
-          <span style={{ opacity: 0.6 }}>Duração</span>
-          <span>{spentDays}/{totalDays} dias</span>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
-          <span style={{ opacity: 0.6 }}>Gastos</span>
-          <span>{budget > 0 ? `${fmtBRL(spent)} / ${fmtBRL(budget)}` : spent > 0 ? fmtBRL(spent) : '—'}</span>
+          <span style={{ opacity: 0.6 }}>Mão de Obra</span>
+          <span>{budgetMob > 0 ? `${fmtBRL(gastoMob)} / ${fmtBRL(budgetMob)}` : gastoMob > 0 ? fmtBRL(gastoMob) : '—'}</span>
         </div>
       </div>
     </div>
@@ -241,10 +253,8 @@ const ThreeProgressBars = ({ item }) => {
   const latest = item.versions[item.versions.length - 1];
   const today = new Date();today.setHours(0, 0, 0, 0);
 
-  // ── Progresso ──
-  const doneSteps = latest.etapas.filter((e) => e.feito).length;
-  const totalSteps = latest.etapas.length;
-  const progPct = totalSteps === 0 ? 0 : Math.round(doneSteps / totalSteps * 100);
+  // ── Progresso (sum of percentual of done steps) ──
+  const progPct = getProgress(latest);
 
   const progTooltip =
   <div>
@@ -252,45 +262,15 @@ const ThreeProgressBars = ({ item }) => {
         Progresso por versão
       </div>
       {item.versions.map((v, i) => {
-      const d = v.etapas.filter((e) => e.feito).length;
-      const t = v.etapas.length;
-      const p = t === 0 ? 0 : Math.round(d / t * 100);
+      const p = getProgress(v);
       const isLatest = i === item.versions.length - 1;
       return (
         <div key={v.number} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, opacity: isLatest ? 1 : 0.65, fontFamily: 'var(--font-mono)' }}>
             <span>v{v.number}{isLatest ? ' (atual)' : ''}</span>
-            <span>{d}/{t} etapas · {p}%</span>
+            <span>{p}%</span>
           </div>);
-
     })}
     </div>;
-
-
-  // ── Duração ──
-  const latestRange = getVersionRange(latest);
-  const totalDays = latestRange ? diffDays(latestRange.start, latestRange.end) : 0;
-  const daysPassed = latestRange ? getDaysPassed(latest) : 0;
-  const durPct = totalDays === 0 ? 0 : Math.round(daysPassed / totalDays * 100);
-  const durOverrun = durPct > 100;
-
-  const durTooltip =
-  <div>
-      <div style={{ fontWeight: 700, marginBottom: 6, color: 'rgba(255,255,255,0.9)', borderBottom: '1px solid rgba(255,255,255,0.12)', paddingBottom: 5 }}>
-        Duração por versão
-      </div>
-      {item.versions.map((v, i) => {
-      const r = getVersionRange(v);
-      const d = r ? diffDays(r.start, r.end) : null;
-      const isLatest = i === item.versions.length - 1;
-      return (
-        <div key={v.number} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, opacity: isLatest ? 1 : 0.65, fontFamily: 'var(--font-mono)' }}>
-            <span>v{v.number}{isLatest ? ' (atual)' : ''}</span>
-            <span>{d !== null ? `${d} dias` : '—'}</span>
-          </div>);
-
-    })}
-    </div>;
-
 
   // ── Gastos ──
   const budget = getTotalBudget(latest);
@@ -324,24 +304,16 @@ const ThreeProgressBars = ({ item }) => {
       <BarRow
         label="Progresso"
         pct={progPct}
-        valueFmt={`${doneSteps}/${totalSteps} etapas`}
+        valueFmt={`${progPct}%`}
         tooltipContent={progTooltip} />
-      
-      <BarRow
-        label="Duração"
-        pct={durPct}
-        valueFmt={totalDays ? `${daysPassed}/${totalDays} dias` : '—'}
-        overrun={durOverrun}
-        valueColor="rgb(78, 110, 138)"
-        tooltipContent={durTooltip} />
-      
+
       <BarRow
         label="Gastos"
         pct={gastPct}
         valueFmt={budget ? `${fmtBRL(spent)} / ${fmtBRL(budget)}` : '—'}
         overrun={gastOverrun}
         tooltipContent={gastTooltip} />
-      
+
     </div>);
 
 };
@@ -694,15 +666,16 @@ const GanttChart = ({ item, zoom, onItemClick }) => {
 
                   {/* For latest version: one segment per step + connectors */}
                   {isLatest ? (() => {
-                    const dated = v.etapas.filter((e) => e.dataInicio && e.dataFim);
+                    const dated = v.etapas.filter((e) => e.mes);
                     return dated.map((etapa, eIdx) => {
-                      const ex = getX(etapa.dataInicio);
-                      // +1 day so the last day is fully covered
-                      const ew = Math.max(4, getW(etapa.dataInicio, etapa.dataFim) + PX_DAY - 3);
+                      const s = mesToStartISO(etapa.mes);
+                      const e2 = mesToEndISO(etapa.mes);
+                      const ex = getX(s);
+                      const ew = Math.max(4, getW(s, e2) + PX_DAY - 3);
                       const next = dated[eIdx + 1];
                       const OVERLAP = 5;
                       const connectorX = ex + ew - OVERLAP;
-                      const nextEx = next ? getX(next.dataInicio) : 0;
+                      const nextEx = next ? getX(mesToStartISO(next.mes)) : 0;
                       const connectorW = next ? Math.max(0, nextEx + OVERLAP - connectorX) : 0;
                       return (
                         <React.Fragment key={eIdx}>
