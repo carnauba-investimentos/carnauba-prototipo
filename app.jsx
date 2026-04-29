@@ -173,8 +173,8 @@ const StepBar = ({ etapa, eIdx, ex, ew, by, bh, onItemClick }) => {
       style={{
         position: 'absolute', left: ex, top: by,
         width: ew, height: bh,
-        background: etapa.feito ? 'var(--color-success)' : 'rgba(212,228,224,0.7)',
-        border: etapa.feito ? '1px solid var(--color-success)' : '1px solid var(--color-sage-80)',
+        background: etapa.feito ? 'var(--color-success)' : 'var(--color-sage)',
+        border: etapa.feito ? '1px solid var(--color-success)' : '1px solid var(--color-sage)',
         borderRadius: 5,
         zIndex: 4,
         cursor: 'pointer', overflow: 'hidden',
@@ -666,7 +666,7 @@ const GanttChart = ({ item, zoom, onItemClick }) => {
               if (!range) return null;
 
               const bx = getX(range.start);
-              const bw = getW(range.start, range.end) + PX_DAY;
+              const bw = getW(range.start, range.end) + PX_DAY - 3;
               const by = barY(vIdx, item.versions.length, ROW_H);
               const bh = isLatest ? MAIN_BAR_H : PREV_BAR_H;
 
