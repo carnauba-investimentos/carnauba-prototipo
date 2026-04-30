@@ -161,207 +161,190 @@ const ProgressoBar = ({ etapas }) => {
 const EtapaCard = ({ etapa, index, onChange, onDelete, onSave, pctWarning }) => {
   const [mode, setMode] = useState(etapa._editando ? 'edit' : 'track');
 
-  // sync if parent flips _editando (e.g. on first render of a fresh etapa)
   useEffect(() => {
     if (etapa._editando) setMode('edit');
   }, [etapa._editando]);
 
-  const totalOrc = (Number(etapa.orcamentoMaterial) || 0) + (Number(etapa.orcamentoMaoDeObra) || 0);
-  const totalGasto = (Number(etapa.gastoMaterial) || 0) + (Number(etapa.gastoMaoDeObra) || 0);
-  const gastoOverrun = totalGasto > totalOrc && totalOrc > 0;
+  const S = { // shared card shell
+    background: 'var(--color-white)',
+    border: '1px solid var(--color-gray-200)',
+    borderRadius: 'var(--radius-md)',
+    boxShadow: 'var(--shadow-sm)',
+    overflow: 'hidden'
+  };
 
-  const fieldStyle = (warn) => ({
-    ...(warn ? { borderColor: 'var(--color-warning)', color: 'var(--color-warning)' } : {})
-  });
+  const numCircle = (
+    <div style={{
+      width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+      border: '1.5px solid var(--color-gray-300)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: 12, fontWeight: 700, color: 'var(--color-navy)'
+    }}>{index + 1}</div>
+  );
 
   // ── Edit mode ─────────────────────────────────────────────────
   if (mode === 'edit') {
     return (
-      <div style={{
-        background: 'var(--color-white)',
-        border: '1px solid var(--color-gray-200)',
-        borderRadius: 'var(--radius-md)',
-        boxShadow: 'var(--shadow-sm)',
-        overflow: 'hidden'
-      }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderBottom: '1px solid var(--color-gray-200)', background: 'var(--color-gray-100)' }}>
-          <div style={{
-            width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
-            background: 'rgba(115,169,199,0.15)', color: 'var(--color-blue)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 11, fontWeight: 700
-          }}>{index + 1}</div>
-          <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: 'var(--color-gray-600)', fontFamily: 'var(--font-display)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            Etapa {index + 1} — edição
-          </span>
-          <button
-            onClick={onDelete}
-            style={{ background: 'transparent', border: 'none', color: 'var(--color-gray-400)', cursor: 'pointer', padding: 4, borderRadius: 4, display: 'flex', transition: 'color 0.15s' }}
-            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-error)'}
-            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-gray-400)'}
-            title="Remover etapa"
-          ><IconTrash /></button>
+      <div style={S}>
+        {/* Top row: number · month picker · % execução */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderBottom: '1px solid var(--color-gray-200)' }}>
+          {numCircle}
+          <div style={{ flex: 1 }}>
+            <MonthPicker value={etapa.mes} onChange={(v) => onChange('mes', v)} />
+          </div>
+          <div style={{ position: 'relative', width: 130, flexShrink: 0 }}>
+            <NumInput
+              value={etapa.percentual}
+              onChange={(v) => onChange('percentual', v)}
+              placeholder="% da execução"
+              style={{
+                paddingRight: 28, textAlign: 'right',
+                ...(pctWarning ? { borderColor: 'var(--color-warning)', color: 'var(--color-warning)' } : {})
+              }}
+            />
+            <span style={{ position: 'absolute', right: 9, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: pctWarning ? 'var(--color-warning)' : 'var(--color-gray-400)', pointerEvents: 'none' }}>%</span>
+          </div>
         </div>
 
-        {/* Fields */}
-        <div style={{ padding: '14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-
-          {/* Row: month + percentual */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        {/* Budget fields + descrição */}
+        <div style={{ padding: '14px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div className="field-group">
-              <label>Mês</label>
-              <MonthPicker value={etapa.mes} onChange={(v) => onChange('mes', v)} />
+              <label>Orçamento · <span style={{ color: 'var(--color-gray-400)', fontWeight: 400 }}>Material</span></label>
+              <NumInput value={etapa.orcamentoMaterial} onChange={(v) => onChange('orcamentoMaterial', v)} placeholder="R$ 0" />
             </div>
             <div className="field-group">
-              <label style={{ display: 'flex', alignItems: 'center', gap: 4, color: pctWarning ? 'var(--color-warning)' : undefined }}>
-                {pctWarning && <IconWarn />} % de Execução
-              </label>
-              <div style={{ position: 'relative' }}>
-                <NumInput
-                  value={etapa.percentual}
-                  onChange={(v) => onChange('percentual', v)}
-                  placeholder="0"
-                  style={pctWarning ? { borderColor: 'var(--color-warning)', paddingRight: 24 } : { paddingRight: 24 }}
-                />
-                <span style={{ position: 'absolute', right: 9, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: 'var(--color-gray-400)', pointerEvents: 'none' }}>%</span>
-              </div>
+              <label>Orçamento · <span style={{ color: 'var(--color-gray-400)', fontWeight: 400 }}>Mão de Obra</span></label>
+              <NumInput value={etapa.orcamentoMaoDeObra} onChange={(v) => onChange('orcamentoMaoDeObra', v)} placeholder="R$ 0" />
             </div>
           </div>
 
-          {/* Row: orçamento material + mão de obra */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <div className="field-group">
-              <label style={{ fontSize: 10 }}>Orçamento · Material (R$)</label>
-              <NumInput value={etapa.orcamentoMaterial} onChange={(v) => onChange('orcamentoMaterial', v)} placeholder="0" />
-            </div>
-            <div className="field-group">
-              <label style={{ fontSize: 10 }}>Orçamento · Mão de Obra (R$)</label>
-              <NumInput value={etapa.orcamentoMaoDeObra} onChange={(v) => onChange('orcamentoMaoDeObra', v)} placeholder="0" />
-            </div>
-          </div>
-
-          {/* Descrição */}
           <div className="field-group">
             <label>Descrição</label>
             <textarea
               placeholder="Descreva o escopo desta etapa…"
               value={etapa.descricao}
               onChange={(e) => onChange('descricao', e.target.value)}
-              rows={3}
+              rows={4}
             />
           </div>
+        </div>
 
-          {/* Actions */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 2 }}>
-            <button
-              onClick={() => { onChange('_editando', false); setMode('track'); }}
-              className="btn btn-ghost"
-              style={{ fontSize: 12 }}
-            >Cancelar</button>
-            <button
-              onClick={() => { onSave(); setMode('track'); }}
-              className="btn btn-primary"
-              style={{ fontSize: 12 }}
-            >Salvar etapa</button>
-          </div>
+        {/* Footer: Deletar left · Salvar right */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', borderTop: '1px solid var(--color-gray-200)' }}>
+          <button onClick={onDelete} className="btn btn-ghost" style={{ fontSize: 12, color: 'var(--color-gray-500)' }}>Deletar</button>
+          <button onClick={() => { onSave(); setMode('track'); }} className="btn btn-primary" style={{ fontSize: 12 }}>Salvar</button>
         </div>
       </div>
     );
   }
 
   // ── Track mode ────────────────────────────────────────────────
+  const matOverrun = Number(etapa.gastoMaterial) > Number(etapa.orcamentoMaterial) && etapa.orcamentoMaterial !== '' && etapa.orcamentoMaterial !== 0;
+  const mobOverrun = Number(etapa.gastoMaoDeObra) > Number(etapa.orcamentoMaoDeObra) && etapa.orcamentoMaoDeObra !== '' && etapa.orcamentoMaoDeObra !== 0;
+
+  const fmtMesTrack = (mes) => {
+    if (!mes) return '—';
+    const [y, m] = mes.split('-');
+    return `${MONTHS_FULL_PT[parseInt(m, 10) - 1]} | ${y}`;
+  };
+
   return (
-    <div style={{
-      background: 'var(--color-white)',
-      border: `1px solid ${etapa.feito ? 'rgba(58,143,106,0.35)' : 'var(--color-gray-200)'}`,
-      borderRadius: 'var(--radius-md)',
-      boxShadow: 'var(--shadow-sm)',
-      overflow: 'hidden',
-      transition: 'border-color 0.2s'
-    }}>
-      {/* Header row */}
+    <div style={{ ...S, border: `1px solid ${etapa.feito ? 'rgba(58,143,106,0.4)' : 'var(--color-gray-200)'}` }}>
+      {/* Header: number · month/year · % execução · checkbox */}
       <div style={{
-        display: 'flex', alignItems: 'center', gap: 10,
-        padding: '10px 14px',
-        background: etapa.feito ? 'rgba(58,143,106,0.04)' : 'transparent',
-        borderBottom: '1px solid var(--color-gray-200)'
+        display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px',
+        borderBottom: '1px solid var(--color-gray-200)',
+        background: etapa.feito ? 'rgba(58,143,106,0.04)' : 'transparent'
       }}>
+        {/* Circle — check when done */}
         <div style={{
-          width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
-          background: etapa.feito ? 'rgba(58,143,106,0.12)' : 'rgba(115,169,199,0.15)',
-          color: etapa.feito ? 'var(--color-success)' : 'var(--color-blue)',
+          width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+          border: `1.5px solid ${etapa.feito ? 'var(--color-success)' : 'var(--color-gray-300)'}`,
+          background: etapa.feito ? 'rgba(58,143,106,0.1)' : 'transparent',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 11, fontWeight: 700
+          fontSize: 12, fontWeight: 700,
+          color: etapa.feito ? 'var(--color-success)' : 'var(--color-navy)'
         }}>
           {etapa.feito ? <IconCheck /> : index + 1}
         </div>
 
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: etapa.feito ? 'var(--color-gray-600)' : 'var(--color-navy)', display: 'flex', gap: 8, alignItems: 'baseline' }}>
-            <span style={{ textDecoration: etapa.feito ? 'line-through' : 'none' }}>{fmtMes(etapa.mes)}</span>
-            {etapa.percentual !== '' && etapa.percentual !== 0 &&
-              <span className="mono" style={{ fontSize: 11, color: 'var(--color-gray-400)', fontWeight: 500 }}>{etapa.percentual}%</span>
-            }
-          </div>
-        </div>
+        {/* Month | Year */}
+        <span style={{ flex: 1, fontSize: 16, fontWeight: 700, color: 'var(--color-navy)', fontFamily: 'var(--font-display)' }}>
+          {fmtMesTrack(etapa.mes)}
+        </span>
 
-        {/* Checkbox feito */}
-        <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer' }} onClick={(e) => e.stopPropagation()}>
-          <input type="checkbox" checked={etapa.feito} onChange={(e) => onChange('feito', e.target.checked)} />
-          <span style={{ fontSize: 11, fontWeight: 600, color: etapa.feito ? 'var(--color-success)' : 'rgb(78, 110, 138)' }}>Feito</span>
+        {/* % da execução */}
+        {etapa.percentual !== '' && etapa.percentual !== 0 &&
+          <span style={{ fontSize: 13, color: 'var(--color-gray-500)', fontWeight: 500, whiteSpace: 'nowrap' }}>
+            {etapa.percentual}% da execução
+          </span>
+        }
+
+        {/* Checkbox — styled as square */}
+        <label style={{ cursor: 'pointer', display: 'flex' }} onClick={(e) => e.stopPropagation()}>
+          <input
+            type="checkbox" checked={etapa.feito}
+            onChange={(e) => onChange('feito', e.target.checked)}
+            style={{ width: 20, height: 20, cursor: 'pointer', accentColor: 'var(--color-success)' }}
+          />
         </label>
-
-        {/* Gear → edit */}
-        <button
-          onClick={() => { onChange('_editando', true); setMode('edit'); }}
-          style={{ background: 'transparent', border: 'none', color: 'var(--color-gray-400)', cursor: 'pointer', padding: 4, borderRadius: 4, display: 'flex', transition: 'color 0.15s' }}
-          onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-navy)'}
-          onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-gray-400)'}
-          title="Editar etapa"
-        ><IconGear /></button>
       </div>
 
       {/* Body */}
-      <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {/* Gastos */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+      <div style={{ padding: '14px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {/* Gastos grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          {/* Material */}
           <div className="field-group">
-            <label style={{ fontSize: 10, display: 'flex', justifyContent: 'space-between' }}>
-              <span>Gastos Realizados · Material</span>
+            <label>Gastos Realizados · <span style={{ color: 'var(--color-gray-400)', fontWeight: 400 }}>Material</span></label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <NumInput
+                value={etapa.gastoMaterial}
+                onChange={(v) => onChange('gastoMaterial', v)}
+                placeholder="R$ 0"
+                style={{ flex: 1, ...(matOverrun ? { borderColor: 'var(--color-warning)', color: 'var(--color-warning)' } : {}) }}
+              />
               {etapa.orcamentoMaterial !== '' && etapa.orcamentoMaterial !== 0 &&
-                <span className="mono" style={{ color: 'var(--color-gray-400)', fontWeight: 400 }}>{fmtBRLModal(etapa.orcamentoMaterial)}</span>
+                <span style={{ fontSize: 12, color: 'var(--color-gray-400)', whiteSpace: 'nowrap' }}>de {fmtBRLModal(etapa.orcamentoMaterial)}</span>
               }
-            </label>
-            <NumInput
-              value={etapa.gastoMaterial}
-              onChange={(v) => onChange('gastoMaterial', v)}
-              placeholder="0"
-              style={Number(etapa.gastoMaterial) > Number(etapa.orcamentoMaterial) && etapa.orcamentoMaterial ? { borderColor: 'var(--color-warning)', color: 'var(--color-warning)' } : {}}
-            />
+            </div>
           </div>
+          {/* Mão de Obra */}
           <div className="field-group">
-            <label style={{ fontSize: 10, display: 'flex', justifyContent: 'space-between' }}>
-              <span>Gastos Realizados · Mão de Obra</span>
+            <label>Gastos Realizados · <span style={{ color: 'var(--color-gray-400)', fontWeight: 400 }}>Mão de Obra</span></label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <NumInput
+                value={etapa.gastoMaoDeObra}
+                onChange={(v) => onChange('gastoMaoDeObra', v)}
+                placeholder="R$ 0"
+                style={{ flex: 1, ...(mobOverrun ? { borderColor: 'var(--color-warning)', color: 'var(--color-warning)' } : {}) }}
+              />
               {etapa.orcamentoMaoDeObra !== '' && etapa.orcamentoMaoDeObra !== 0 &&
-                <span className="mono" style={{ color: 'var(--color-gray-400)', fontWeight: 400 }}>{fmtBRLModal(etapa.orcamentoMaoDeObra)}</span>
+                <span style={{ fontSize: 12, color: 'var(--color-gray-400)', whiteSpace: 'nowrap' }}>de {fmtBRLModal(etapa.orcamentoMaoDeObra)}</span>
               }
-            </label>
-            <NumInput
-              value={etapa.gastoMaoDeObra}
-              onChange={(v) => onChange('gastoMaoDeObra', v)}
-              placeholder="0"
-              style={Number(etapa.gastoMaoDeObra) > Number(etapa.orcamentoMaoDeObra) && etapa.orcamentoMaoDeObra ? { borderColor: 'var(--color-warning)', color: 'var(--color-warning)' } : {}}
-            />
+            </div>
           </div>
         </div>
 
-        {/* Descrição read-only */}
-        {etapa.descricao &&
-          <div style={{ fontSize: 12, color: 'var(--color-gray-600)', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>
+        {/* Descrição */}
+        {etapa.descricao && <>
+          <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--color-gray-400)', fontFamily: 'var(--font-display)' }}>Descrição</div>
+          <div style={{ fontSize: 13, color: 'var(--color-gray-600)', lineHeight: 1.6, whiteSpace: 'pre-wrap', marginTop: -8 }}>
             {etapa.descricao}
           </div>
-        }
+        </>}
+
+        {/* Gear bottom-right */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button
+            onClick={() => { onChange('_editando', true); setMode('edit'); }}
+            style={{ background: 'transparent', border: 'none', color: 'var(--color-gray-300)', cursor: 'pointer', padding: 4, borderRadius: 4, display: 'flex', transition: 'color 0.15s' }}
+            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-navy)'}
+            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-gray-300)'}
+            title="Editar etapa"
+          ><IconGear /></button>
+        </div>
       </div>
     </div>
   );

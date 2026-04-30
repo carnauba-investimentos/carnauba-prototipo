@@ -50,7 +50,7 @@ const getTotalBudget = (v) => (v?.etapas || []).reduce((s, e) => s + (Number(e.o
 const getTotalSpent = (v) => (v?.etapas || []).reduce((s, e) => s + (Number(e.gastoMaterial) || 0) + (Number(e.gastoMaoDeObra) || 0), 0);
 
 // ── Gantt layout constants ─────────────────────────────────────────
-const MAIN_BAR_H = 26;
+const MAIN_BAR_H = 25;
 const PREV_BAR_H = 10;
 const BAR_GAP = 7;
 const TOP_PAD = 14;
@@ -154,6 +154,14 @@ const StepBar = ({ etapa, eIdx, ex, ew, by, bh, onItemClick }) => {
     return `${MONTHS_FULL[parseInt(m,10)-1]} ${y}`;
   };
 
+  const spentOverBudget = totalBudget > 0 && totalGasto > totalBudget;
+  const monthOver = (() => {
+    if (!etapa.mes || etapa.feito) return false;
+    const today = new Date(); today.setHours(0,0,0,0);
+    const end = new Date(mesToEndISO(etapa.mes) + 'T00:00:00');
+    return today > end;
+  })();
+
   const tooltip = (
     <div>
       <div style={{ fontWeight: 700, marginBottom: 6, color: 'rgba(255,255,255,0.9)', borderBottom: '1px solid rgba(255,255,255,0.12)', paddingBottom: 5 }}>
@@ -176,26 +184,106 @@ const StepBar = ({ etapa, eIdx, ex, ew, by, bh, onItemClick }) => {
     </div>
   );
 
+  const LABEL_H = 16;
+
+  // Progress fill: % of budget spent, capped at 100
+  const spentPct = totalBudget > 0 ? Math.min(100, (totalGasto / totalBudget) * 100) : 0;
+
+  // ── Bar appearance per use case ────────────────────────────────────
+  // done + over budget  → warning yellow fill (solid), success border, white text
+  // done + within budget → success-70 bg + success fill, success border, white text
+  // not done + over budget → warning yellow fill (solid), warning border, white text
+  // overdue + not done  → sage-50 bg + sage fill, warning border, navy text
+  // normal              → sage-50 bg + sage fill, sage border, navy text
+
+  let barBg, barBorderColor, barBorderWidth, fillBg, showProgressFill, textColor, barLabel;
+
+  if (etapa.feito && spentOverBudget) {
+    barBg = 'var(--color-warning)';
+    barBorderColor = 'var(--color-success)'; barBorderWidth = '2px';
+    fillBg = null; showProgressFill = false;
+    textColor = 'rgba(255,255,255,0.9)';
+    barLabel = totalGasto > 0 ? fmtBRL(totalGasto) : null;
+  } else if (etapa.feito) {
+    barBg = '#6CA48C';
+    barBorderColor = 'var(--color-success)'; barBorderWidth = '2px';
+    fillBg = 'var(--color-success)'; showProgressFill = true;
+    textColor = 'rgba(255,255,255,0.9)';
+    barLabel = fmtBRL(totalBudget);
+  } else if (spentOverBudget) {
+    barBg = 'var(--color-warning)';
+    barBorderColor = 'var(--color-warning)'; barBorderWidth = '1px';
+    fillBg = null; showProgressFill = false;
+    textColor = 'rgba(255,255,255,0.9)';
+    barLabel = fmtBRL(totalGasto);
+  } else {
+    barBg = 'var(--color-sage-50)';
+    barBorderColor = monthOver ? 'var(--color-warning)' : 'var(--color-sage-80)';
+    barBorderWidth = monthOver ? '2px' : '1px';
+    fillBg = 'var(--color-sage)'; showProgressFill = true;
+    textColor = 'var(--color-navy)';
+    barLabel = fmtBRL(totalBudget);
+  }
+
   return (
-    <div
-      ref={ref}
-      onClick={onItemClick}
-      onMouseEnter={(e) => { ref.current && setAnchorRect(ref.current.getBoundingClientRect()); e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; }}
-      onMouseLeave={(e) => { setAnchorRect(null); e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
-      style={{
-        position: 'absolute', left: ex, top: by,
-        width: ew, height: bh,
-        background: etapa.feito ? 'var(--color-success)' : 'var(--color-sage)',
-        border: etapa.feito ? '1px solid var(--color-success)' : '1px solid var(--color-sage)',
-        borderRadius: 5,
-        zIndex: 4,
-        cursor: 'pointer', overflow: 'hidden',
-        transition: 'opacity 0.15s, transform 0.1s, box-shadow 0.1s',
-        boxShadow: 'var(--shadow-sm)'
-      }}
-    >
-      {anchorRect && <PortalTooltip anchorRect={anchorRect}>{tooltip}</PortalTooltip>}
-    </div>
+    <>
+      {/* Label above bar */}
+      <div style={{
+        position: 'absolute', left: ex, top: by - LABEL_H - 2,
+        width: ew, height: LABEL_H,
+        display: 'flex', alignItems: 'center', justifyContent: 'flex-start',
+        padding: '0 6px', pointerEvents: 'none', overflow: 'hidden'
+      }}>
+        {etapa.feito ? (
+          <span className="mono" style={{ fontSize: 9, fontWeight: 700, whiteSpace: 'nowrap', color: 'var(--color-success)', letterSpacing: '0.05em' }}>
+            etapa completa
+          </span>
+        ) : monthOver ? (
+          <span className="mono" style={{ fontSize: 9, fontWeight: 700, whiteSpace: 'nowrap', color: 'var(--color-warning)', letterSpacing: '0.05em' }}>
+            etapa atrasada
+          </span>
+        ) : null}
+      </div>
+
+      {/* Bar */}
+      <div
+        ref={ref}
+        onClick={onItemClick}
+        onMouseEnter={(e) => { ref.current && setAnchorRect(ref.current.getBoundingClientRect()); e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; }}
+        onMouseLeave={(e) => { setAnchorRect(null); e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
+        style={{
+          position: 'absolute', left: ex, top: by,
+          width: ew, height: bh,
+          background: barBg,
+          border: `${barBorderWidth} solid ${barBorderColor}`,
+          borderRadius: 5, zIndex: 4,
+          cursor: 'pointer',
+          transition: 'opacity 0.15s, transform 0.1s, box-shadow 0.1s',
+          boxShadow: 'var(--shadow-sm)',
+          overflow: 'hidden',
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}
+      >
+        {/* Spent progress fill */}
+        {showProgressFill && spentPct > 0 && (
+          <div style={{
+            position: 'absolute', left: 0, top: 0,
+            width: `${spentPct}%`, height: '100%',
+            background: fillBg,
+            borderRadius: spentPct >= 100 ? 5 : '3px 0 0 3px', pointerEvents: 'none'
+          }} />
+        )}
+
+        {/* Value label */}
+        {barLabel && (
+          <span className="mono" style={{ position: 'relative', zIndex: 1, fontSize: 11, fontWeight: 600, color: textColor, pointerEvents: 'none', whiteSpace: 'nowrap' }}>
+            {barLabel}
+          </span>
+        )}
+
+        {anchorRect && <PortalTooltip anchorRect={anchorRect}>{tooltip}</PortalTooltip>}
+      </div>
+    </>
   );
 };
 
@@ -426,20 +514,24 @@ const Sidebar = ({ collapsed, onToggle, projectName, onProjectNameChange }) => {
 };
 
 // ── GanttChart ────────────────────────────────────────────────────
-const GanttChart = ({ item, zoom, onItemClick }) => {
+const GanttChart = ({ items, zoom, onItemClick, onAddItem }) => {
   const scrollRef = useRef(null);
   const today = new Date();today.setHours(0, 0, 0, 0);
 
   const PX_DAY = zoom === 'days' ? 44 : zoom === 'weeks' ? 16 : 3.5;
 
-  // Date range
+  // Date range across all items
   let minDate = null,maxDate = null;
-  if (item) {
+  items.forEach((item) => {
     item.versions.forEach((v) => v.etapas.forEach((e) => {
-      if (e.dataInicio) {const d = new Date(e.dataInicio + 'T00:00:00');if (!minDate || d < minDate) minDate = d;}
-      if (e.dataFim) {const d = new Date(e.dataFim + 'T00:00:00');if (!maxDate || d > maxDate) maxDate = d;}
+      if (e.mes) {
+        const s = new Date(mesToStartISO(e.mes) + 'T00:00:00');
+        const en = new Date(mesToEndISO(e.mes) + 'T00:00:00');
+        if (!minDate || s < minDate) minDate = s;
+        if (!maxDate || en > maxDate) maxDate = en;
+      }
     }));
-  }
+  });
   if (!minDate) {minDate = new Date(today);minDate.setMonth(minDate.getMonth() - 1);}
   if (!maxDate) {maxDate = new Date(today);maxDate.setMonth(maxDate.getMonth() + 4);}
   const startDate = new Date(minDate);startDate.setDate(startDate.getDate() - 14);
@@ -487,12 +579,6 @@ const GanttChart = ({ item, zoom, onItemClick }) => {
     }
   }
 
-  const numVersions = item ? item.versions.length : 0;
-  const ROW_H = rowHeight(numVersions);
-  const latest = item?.versions[item.versions.length - 1];
-  const latestRange = item ? getVersionRange(latest) : null;
-  const progress = item ? getProgress(latest) : 0;
-
   useEffect(() => {
     if (scrollRef.current && todayX > 0) {
       setTimeout(() => {
@@ -509,11 +595,12 @@ const GanttChart = ({ item, zoom, onItemClick }) => {
         width: LEFT_COL_W, flexShrink: 0,
         borderRight: '1px solid var(--color-gray-200)',
         display: 'flex', flexDirection: 'column',
-        background: 'var(--color-white)', zIndex: 3
+        background: 'var(--color-white)', zIndex: 3, overflowY: 'auto'
       }}>
         <div style={{
           height: HEADER_H, borderBottom: '1px solid var(--color-gray-200)',
-          display: 'flex', alignItems: 'center', padding: '0 16px', flexShrink: 0
+          display: 'flex', alignItems: 'center', padding: '0 16px', flexShrink: 0,
+          position: 'sticky', top: 0, background: 'var(--color-white)', zIndex: 1
         }}>
           <span style={{
             fontSize: 10, color: 'var(--color-gray-400)', fontWeight: 600,
@@ -523,38 +610,37 @@ const GanttChart = ({ item, zoom, onItemClick }) => {
           </span>
         </div>
 
-        {item ?
-        <div
-          onClick={onItemClick}
-          style={{
-            minHeight: ROW_H, padding: '12px 16px',
-            display: 'flex', flexDirection: 'column', justifyContent: 'center',
-            cursor: 'pointer', borderBottom: '1px solid var(--color-gray-200)',
-            transition: 'background 0.12s', gap: "9px", background: "var(--color-white)"
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.background = 'var(--color-gray-100)'}
-          onMouseLeave={(e) => e.currentTarget.style.background = 'var(--color-white)'}>
-          
-            {/* Item name */}
-            <span style={{
-            fontWeight: 700, color: 'var(--color-navy)',
-            fontFamily: 'var(--font-display)',
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: "16px"
-          }}>
-              {latest?.nome || <span style={{ color: 'var(--color-gray-400)', fontWeight: 400 }}>Item sem nome</span>}
-            </span>
+        {items.map((item) => {
+          const ROW_H = rowHeight(item.versions.length);
+          const latest = item.versions[item.versions.length - 1];
+          return (
+            <div
+              key={item.id}
+              onClick={() => onItemClick(item)}
+              style={{
+                minHeight: ROW_H, padding: '12px 16px',
+                display: 'flex', flexDirection: 'column', justifyContent: 'center',
+                cursor: 'pointer', borderBottom: '1px solid var(--color-gray-200)',
+                transition: 'background 0.12s', gap: 9, background: 'var(--color-white)'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--color-gray-100)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'var(--color-white)'}
+            >
+              <span style={{ fontWeight: 700, color: 'var(--color-navy)', fontFamily: 'var(--font-display)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 16 }}>
+                {latest?.nome || <span style={{ color: 'var(--color-gray-400)', fontWeight: 400 }}>Item sem nome</span>}
+              </span>
+              <ThreeProgressBars item={item} />
+            </div>
+          );
+        })}
 
-            {/* Three KPI bars */}
-            <ThreeProgressBars item={item} />
-          </div> :
-
+        {/* Add button always at bottom */}
         <div style={{ padding: '14px 16px' }}>
-            <button onClick={onItemClick} className="btn btn-ghost"
-          style={{ width: '100%', justifyContent: 'center', backgroundColor: "rgb(226, 239, 246)", color: "rgb(45, 78, 112)", fontSize: "14px" }}>
-              + Adicionar Item de Cronograma
-            </button>
-          </div>
-        }
+          <button onClick={onAddItem} className="btn btn-ghost"
+            style={{ width: '100%', justifyContent: 'center', backgroundColor: 'rgb(226, 239, 246)', color: 'rgb(45, 78, 112)', fontSize: 14 }}>
+            + Adicionar Item de Cronograma
+          </button>
+        </div>
       </div>
 
       {/* ── Timeline ────────────────────────────────── */}
@@ -599,138 +685,79 @@ const GanttChart = ({ item, zoom, onItemClick }) => {
             }
           </div>
 
-          {/* Row body */}
-          <div style={{ position: 'relative', minHeight: ROW_H, flex: 1 }}>
-            {/* Grid */}
-            {cols.map((col, i) =>
-            <div key={i} style={{
-              position: 'absolute', left: col.x + col.width, top: 0, bottom: 0,
-              width: 1, background: 'var(--color-gray-200)', opacity: 0.5
-            }} />
-            )}
-            {zoom === 'days' && cols.filter((c) => c.isWeekend).map((col, i) =>
-            <div key={i} style={{
-              position: 'absolute', left: col.x, width: col.width,
-              top: 0, bottom: 0, background: 'rgba(27,60,95,0.025)'
-            }} />
-            )}
-
-            {/* Today line */}
-            {todayX > 0 &&
-            <>
-                <div style={{
-                position: 'absolute', left: todayX, top: 0, bottom: 0,
-                width: 1.5, background: 'var(--color-blue)', opacity: 0.3, zIndex: 1
-              }} />
-                <div className="mono" style={{
-                position: 'absolute', left: todayX + 4, top: 4,
-                fontSize: 9, color: 'var(--color-blue)', opacity: 0.7
-              }}>
-                  hoje
-                </div>
-              </>
-            }
-
-            {/* Version bars — always navy for current, blue-50 for older */}
-            {item && item.versions.map((v, vIdx) => {
-              const isLatest = vIdx === item.versions.length - 1;
-              const range = getVersionRange(v);
-              if (!range) return null;
-
-              const bx = getX(range.start);
-              const bw = getW(range.start, range.end) + PX_DAY - 3;
-              const by = barY(vIdx, item.versions.length, ROW_H);
-              const bh = isLatest ? MAIN_BAR_H : PREV_BAR_H;
-
-              const vProg = getProgress(v);
-
+          {/* Row bodies — one per item */}
+          <div style={{ flex: 1 }}>
+            {items.map((item) => {
+              const ROW_H = rowHeight(item.versions.length);
+              const latest = item.versions[item.versions.length - 1];
               return (
-                <React.Fragment key={v.number}>
-                  {/* Label left of bar */}
-                  <div style={{
-                    position: 'absolute', top: by,
-                    left: bx,
-                    transform: 'translateX(calc(-100% - 10px))',
-                    height: bh,
-                    display: 'flex', alignItems: 'center',
-                    pointerEvents: 'none', whiteSpace: 'nowrap'
-                  }}>
-                    <span style={{
-                      fontSize: isLatest ? 13 : 11, fontWeight: isLatest ? 700 : 500,
-                      color: isLatest ? 'rgb(27, 60, 95)' : 'var(--color-gray-400)',
-                      fontFamily: 'var(--font-display)'
-                    }}>
-                      {isLatest && latest?.nome ? <>{latest.nome} · <span className="mono" style={{ fontWeight: 600, fontSize: 12 }}>v{v.number}</span></> : <span className="mono">v{v.number}</span>}
-                    </span>
-                  </div>
-
-                  {/* For latest version: one segment per step + connectors */}
-                  {isLatest ? (() => {
-                    const dated = v.etapas.filter((e) => e.mes);
-                    return dated.map((etapa, eIdx) => {
-                      const s = mesToStartISO(etapa.mes);
-                      const e2 = mesToEndISO(etapa.mes);
-                      const ex = getX(s);
-                      const ew = Math.max(4, getW(s, e2) + PX_DAY - 3);
-                      const next = dated[eIdx + 1];
-                      const OVERLAP = 5;
-                      const connectorX = ex + ew - OVERLAP;
-                      const nextEx = next ? getX(mesToStartISO(next.mes)) : 0;
-                      const connectorW = next ? Math.max(0, nextEx + OVERLAP - connectorX) : 0;
-                      return (
-                        <React.Fragment key={eIdx}>
-                          {connectorW > 0 &&
-                            <div style={{
-                              position: 'absolute', left: connectorX, top: by,
-                              width: connectorW, height: bh,
-                              background: 'rgba(212,228,224,0.7)', borderRadius: 2,
-                              zIndex: 2, pointerEvents: 'none'
-                            }} />
-                          }
-                          <StepBar
-                            etapa={etapa}
-                            eIdx={eIdx}
-                            ex={ex}
-                            ew={ew}
-                            by={by}
-                            bh={bh}
-                            onItemClick={onItemClick}
-                          />
-                        </React.Fragment>
-                      );
-                    });
-                  })() : (
-                    /* Previous versions: single bar */
-                    <div
-                      onClick={onItemClick}
-                      title={`v${v.number} · ${fmtDatePT(range.start)} → ${fmtDatePT(range.end)} · ${diffDays(range.start, range.end)} dias`}
-                      style={{
-                        position: 'absolute', left: bx, top: by,
-                        width: bw, height: bh,
-                        background: '#D1D9E1',
-                        borderRadius: 3,
-                        zIndex: 2,
-                        cursor: 'pointer',
-                        transition: 'opacity 0.15s', boxShadow: 'var(--shadow-sm)'
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.7'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
-                    />
+                <div key={item.id} style={{ position: 'relative', height: ROW_H, borderBottom: '1px solid var(--color-gray-200)' }}>
+                  {/* Grid lines */}
+                  {cols.map((col, i) =>
+                    <div key={i} style={{ position: 'absolute', left: col.x + col.width, top: 0, bottom: 0, width: 1, background: 'var(--color-gray-200)', opacity: 0.5 }} />
                   )}
-                </React.Fragment>);
+                  {zoom === 'days' && cols.filter((c) => c.isWeekend).map((col, i) =>
+                    <div key={i} style={{ position: 'absolute', left: col.x, width: col.width, top: 0, bottom: 0, background: 'rgba(27,60,95,0.025)' }} />
+                  )}
+                  {/* Today line */}
+                  {todayX > 0 && <div style={{ position: 'absolute', left: todayX, top: 0, bottom: 0, width: 1.5, background: 'var(--color-blue)', opacity: 0.3, zIndex: 1 }} />}
 
+                  {/* Version bars */}
+                  {item.versions.map((v, vIdx) => {
+                    const isLatest = vIdx === item.versions.length - 1;
+                    const range = getVersionRange(v);
+                    if (!range) return null;
+                    const bx = getX(range.start);
+                    const bw = getW(range.start, range.end) + PX_DAY - 3;
+                    const by = barY(vIdx, item.versions.length, ROW_H);
+                    const bh = isLatest ? MAIN_BAR_H : PREV_BAR_H;
+
+                    return (
+                      <React.Fragment key={v.number}>
+                        {/* Label left of bar */}
+                        <div style={{ position: 'absolute', top: by, left: bx, transform: 'translateX(calc(-100% - 10px))', height: bh, display: 'flex', alignItems: 'center', pointerEvents: 'none', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontSize: isLatest ? 13 : 11, fontWeight: isLatest ? 700 : 500, color: isLatest ? 'rgb(27,60,95)' : 'var(--color-gray-400)', fontFamily: 'var(--font-display)' }}>
+                            {isLatest && latest?.nome ? <>{latest.nome} · <span className="mono" style={{ fontWeight: 600, fontSize: 12 }}>v{v.number}</span></> : <span className="mono">v{v.number}</span>}
+                          </span>
+                        </div>
+
+                        {/* Latest: step segments + connectors */}
+                        {isLatest ? (() => {
+                          const dated = v.etapas.filter((e) => e.mes);
+                          return dated.map((etapa, eIdx) => {
+                            const s = mesToStartISO(etapa.mes);
+                            const e2 = mesToEndISO(etapa.mes);
+                            const ex = getX(s);
+                            const ew = Math.max(4, getW(s, e2) + PX_DAY - 3);
+                            const next = dated[eIdx + 1];
+                            const OVERLAP = 5;
+                            const connectorX = ex + ew - OVERLAP;
+                            const nextEx = next ? getX(mesToStartISO(next.mes)) : 0;
+                            const connectorW = next ? Math.max(0, nextEx + OVERLAP - connectorX) : 0;
+                            return (
+                              <React.Fragment key={eIdx}>
+                                {connectorW > 0 && <div style={{ position: 'absolute', left: connectorX, top: by, width: connectorW, height: bh, background: 'rgba(212,228,224,0.5)', borderRadius: 2, zIndex: 2, pointerEvents: 'none' }} />}
+                                <StepBar etapa={etapa} eIdx={eIdx} ex={ex} ew={ew} by={by} bh={bh} onItemClick={() => onItemClick(item)} />
+                              </React.Fragment>
+                            );
+                          });
+                        })() : (
+                          <div
+                            onClick={() => onItemClick(item)}
+                            title={`v${v.number} · ${fmtDatePT(range.start)} → ${fmtDatePT(range.end)}`}
+                            style={{ position: 'absolute', left: bx, top: by, width: bw, height: bh, background: '#D1D9E1', borderRadius: 3, zIndex: 2, cursor: 'pointer', transition: 'opacity 0.15s', boxShadow: 'var(--shadow-sm)' }}
+                            onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.7'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
+                          />
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+              );
             })}
-
-            {!item &&
-            <div style={{
-              position: 'absolute', inset: 0,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'var(--color-gray-400)', fontSize: 13,
-              fontFamily: 'var(--font-body)', pointerEvents: 'none'
-            }}>
-                O cronograma aparecerá aqui
-              </div>
-            }
+            {/* Empty add-button row */}
+            <div style={{ height: 56 }} />
           </div>
         </div>
       </div>
@@ -738,28 +765,71 @@ const GanttChart = ({ item, zoom, onItemClick }) => {
 
 };
 
+// ── Default item ──────────────────────────────────────────────────
+const DEFAULT_ITEMS = [
+  {
+    id: 'default-1',
+    versions: [{
+      number: 1,
+      date: todayISO(),
+      nome: 'Aço',
+      etapas: [
+        {
+          id: 'e-default-1',
+          mes: '2026-04',
+          percentual: 60,
+          orcamentoMaterial: 30000,
+          orcamentoMaoDeObra: 17000,
+          descricao: 'Compra do material e início da instalação.',
+          feito: false,
+          gastoMaterial: '',
+          gastoMaoDeObra: '',
+        },
+        {
+          id: 'e-default-2',
+          mes: '2026-05',
+          percentual: 40,
+          orcamentoMaterial: 0,
+          orcamentoMaoDeObra: 0,
+          descricao: 'Finalização da instalação.',
+          feito: false,
+          gastoMaterial: '',
+          gastoMaoDeObra: '',
+        },
+      ]
+    }]
+  }
+];
+
 // ── App ───────────────────────────────────────────────────────────
 const App = () => {
-  const [item, setItem] = useState(null);
+  const [items, setItems] = useState(DEFAULT_ITEMS);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState(null); // item being edited, or null for new
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [zoom, setZoom] = useState('weeks');
   const [projectName, setProjectName] = useState('Projeto');
 
-  const handleOpenItem = () => setModalOpen(true);
+  const handleOpenItem = (item) => { setEditingItem(item || null); setModalOpen(true); };
+  const handleAddItem = () => { setEditingItem(null); setModalOpen(true); };
 
   const handleSave = ({ nome, etapas, needsNewVersion }) => {
-    setItem((prev) => {
-      if (!prev) {
-        return { id: '1', versions: [{ number: 1, date: todayISO(), nome, etapas: JSON.parse(JSON.stringify(etapas)) }] };
+    setItems((prev) => {
+      if (!editingItem) {
+        // new item
+        const newId = `item-${Date.now()}`;
+        return [...prev, { id: newId, versions: [{ number: 1, date: todayISO(), nome, etapas: JSON.parse(JSON.stringify(etapas)) }] }];
       }
-      const versions = [...prev.versions];
-      if (needsNewVersion) {
-        versions.push({ number: versions.length + 1, date: todayISO(), nome, etapas: JSON.parse(JSON.stringify(etapas)) });
-      } else {
-        versions[versions.length - 1] = { ...versions[versions.length - 1], nome, etapas: JSON.parse(JSON.stringify(etapas)) };
-      }
-      return { ...prev, versions };
+      return prev.map((it) => {
+        if (it.id !== editingItem.id) return it;
+        const versions = [...it.versions];
+        if (needsNewVersion) {
+          versions.push({ number: versions.length + 1, date: todayISO(), nome, etapas: JSON.parse(JSON.stringify(etapas)) });
+        } else {
+          versions[versions.length - 1] = { ...versions[versions.length - 1], nome, etapas: JSON.parse(JSON.stringify(etapas)) };
+        }
+        return { ...it, versions };
+      });
     });
     setModalOpen(false);
   };
@@ -791,14 +861,14 @@ const App = () => {
           </span>
 
           {/* Version legend */}
-          {item && item.versions.length > 1 &&
+          {items.some((it) => it.versions.length > 1) &&
           <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginRight: 8, width: 220 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                 <div style={{ width: 22, borderRadius: 3, background: 'var(--color-blue-50)', backgroundColor: "rgb(209, 217, 225)", height: "16px" }} />
                 <span style={{ fontSize: 10, color: 'var(--color-gray-600)', fontFamily: 'var(--font-display)' }}>versões anteriores</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                <div style={{ width: 22, height: 16, background: 'var(--color-navy)', backgroundColor: "rgb(115, 169, 199)", borderRadius: "3px" }} />
+                <div style={{ width: 22, height: 16, background: 'var(--color-sage)', backgroundColor: "var(--color-sage)", borderRadius: "3px" }} />
                 <span style={{ fontSize: 10, color: 'var(--color-gray-600)', fontFamily: 'var(--font-display)' }}>versão atual</span>
               </div>
             </div>
@@ -828,11 +898,11 @@ const App = () => {
 
         {/* Gantt */}
         <div style={{ flex: 1, overflow: 'hidden', display: 'flex' }}>
-          <GanttChart item={item} zoom={zoom} onItemClick={handleOpenItem} />
+          <GanttChart items={items} zoom={zoom} onItemClick={handleOpenItem} onAddItem={handleAddItem} />
         </div>
       </div>
 
-      <ItemModal item={item} isOpen={modalOpen} onClose={() => setModalOpen(false)} onSave={handleSave} />
+      <ItemModal item={editingItem} isOpen={modalOpen} onClose={() => setModalOpen(false)} onSave={handleSave} />
     </div>);
 
 };
