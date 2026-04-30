@@ -40,7 +40,7 @@ const formatPTBR = (v) => {
   return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(n);
 };
 
-const NumInput = ({ value, onChange, placeholder, disabled, style: extraStyle }) => {
+const NumInput = ({ value, onChange, placeholder, disabled, style: extraStyle, className }) => {
   const [focused, setFocused] = useState(false);
   const [raw, setRaw] = useState('');
   return (
@@ -48,6 +48,7 @@ const NumInput = ({ value, onChange, placeholder, disabled, style: extraStyle })
       type="text" inputMode="numeric"
       placeholder={placeholder}
       disabled={disabled}
+      className={className}
       style={extraStyle || {}}
       value={focused ? raw : formatPTBR(value)}
       onFocus={() => { setRaw(value === '' || value == null ? '' : String(value)); setFocused(true); }}
@@ -90,7 +91,7 @@ const MonthPicker = ({ value, onChange, disabled }) => {
         }}
       >
         <span>{value ? fmtMes(value) : 'Selecionar mês'}</span>
-        {!disabled && <span style={{ fontSize: 10, color: 'var(--color-gray-400)' }}>▾</span>}
+        {!disabled && <span style={{ color: 'var(--color-gray-400)', display: 'flex' }}><IconCalendar /></span>}
       </button>
 
       {open && (
@@ -137,10 +138,11 @@ const MonthPicker = ({ value, onChange, disabled }) => {
 
 // ── Icons ─────────────────────────────────────────────────────────
 const IconClose = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>;
+const IconCalendar = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1" y="2.5" width="11" height="9.5" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M4 1v3M9 1v3M1 6h11" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>;
 const IconPlus = () => <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>;
 const IconTrash = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 3.5h10M5 3.5V2.5a.5.5 0 01.5-.5h2a.5.5 0 01.5.5v1M11 3.5l-.7 7.5a1 1 0 01-1 .9H3.7a1 1 0 01-1-.9L2 3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 const IconCheck = () => <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M1.5 5.5l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>;
-const IconGear = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="2" stroke="currentColor" strokeWidth="1.3"/><path d="M6.5 1v1.2M6.5 10.8V12M1 6.5h1.2M10.8 6.5H12M2.4 2.4l.85.85M9.75 9.75l.85.85M9.75 3.25l-.85.85M3.25 9.75l-.85.85" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>;
+const IconGear = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1 9.5h8M7 1.5l2 2L3.5 9H1.5V7L7 1.5zM10.5 4l1.5-1.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>;
 const IconWarn = () => <svg width="11" height="11" viewBox="0 0 11 11" fill="none" style={{ flexShrink: 0 }}><path d="M5.5 1L10.5 10H0.5L5.5 1z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/><path d="M5.5 4.5v2.5M5.5 8.5v.3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
 
 // ── ProgressoBar ──────────────────────────────────────────────────
@@ -230,10 +232,13 @@ const EtapaCard = ({ etapa, index, onChange, onDelete, onSave, pctWarning }) => 
           </div>
         </div>
 
-        {/* Footer: Deletar left · Salvar right */}
+        {/* Footer: Deletar left · Cancelar + Salvar right */}
         <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', borderTop: '1px solid var(--color-gray-200)' }}>
           <button onClick={onDelete} className="btn btn-ghost" style={{ fontSize: 12, color: 'var(--color-gray-500)' }}>Deletar</button>
-          <button onClick={() => { onSave(); setMode('track'); }} className="btn btn-primary" style={{ fontSize: 12 }}>Salvar</button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => setMode('track')} className="btn btn-ghost" style={{ fontSize: 12 }}>Cancelar</button>
+            <button onClick={() => { onSave(); setMode('track'); }} className="btn btn-primary" style={{ fontSize: 12 }}>Salvar</button>
+          </div>
         </div>
       </div>
     );
@@ -254,34 +259,47 @@ const EtapaCard = ({ etapa, index, onChange, onDelete, onSave, pctWarning }) => 
       {/* Header: number · month/year · % execução · checkbox */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px',
-        borderBottom: '1px solid var(--color-gray-200)',
-        background: etapa.feito ? 'rgba(58,143,106,0.04)' : 'transparent'
+        borderBottom: '1px solid var(--color-navy-90)',
+        background: 'var(--color-navy-90)', borderRadius: '8px 8px 0 0'
       }}>
         {/* Circle — check when done */}
         <div style={{
           width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
-          border: `1.5px solid ${etapa.feito ? 'var(--color-success)' : 'var(--color-gray-300)'}`,
-          background: etapa.feito ? 'rgba(58,143,106,0.1)' : 'transparent',
+          border: `1.5px solid ${etapa.feito ? 'var(--color-success)' : 'rgba(255,255,255,0.3)'}`,
+          background: etapa.feito ? 'rgba(58,143,106,0.25)' : 'rgba(255,255,255,0.08)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 12, fontWeight: 700,
-          color: etapa.feito ? 'var(--color-success)' : 'var(--color-navy)'
+          color: etapa.feito ? 'var(--color-success)' : 'rgba(255,255,255,0.7)'
         }}>
           {etapa.feito ? <IconCheck /> : index + 1}
         </div>
 
         {/* Month | Year */}
-        <span style={{ flex: 1, fontSize: 16, fontWeight: 700, color: 'var(--color-navy)', fontFamily: 'var(--font-display)' }}>
+        <span style={{ flex: 1, fontSize: 16, fontWeight: 700, color: 'var(--color-white)', fontFamily: 'var(--font-display)' }}>
           {fmtMesTrack(etapa.mes)}
         </span>
 
+        {/* Total spent / budget — centered */}
+        {(() => {
+          const totalGasto = (Number(etapa.gastoMaterial) || 0) + (Number(etapa.gastoMaoDeObra) || 0);
+          const totalBudget = (Number(etapa.orcamentoMaterial) || 0) + (Number(etapa.orcamentoMaoDeObra) || 0);
+          const over = totalBudget > 0 && totalGasto > totalBudget;
+          return (
+            <span style={{ flex: 1, textAlign: 'center', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', fontFamily: 'var(--font-display)' }}>
+              <span style={{ color: over ? 'var(--color-warning)' : 'var(--color-white)' }}>{fmtBRLModal(totalGasto)}</span>
+              <span style={{ color: 'rgba(255,255,255,0.6)' }}>{` / ${fmtBRLModal(totalBudget)}`}</span>
+            </span>
+          );
+        })()}
+
         {/* % da execução */}
         {etapa.percentual !== '' && etapa.percentual !== 0 &&
-          <span style={{ fontSize: 13, color: 'var(--color-gray-500)', fontWeight: 500, whiteSpace: 'nowrap' }}>
+          <span style={{ flex: 1, textAlign: 'right', fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 500, whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)' }}>
             {etapa.percentual}% da execução
           </span>
         }
 
-        {/* Checkbox — styled as square */}
+        {/* Checkbox */}
         <label style={{ cursor: 'pointer', display: 'flex' }} onClick={(e) => e.stopPropagation()}>
           <input
             type="checkbox" checked={etapa.feito}
@@ -298,31 +316,31 @@ const EtapaCard = ({ etapa, index, onChange, onDelete, onSave, pctWarning }) => 
           {/* Material */}
           <div className="field-group">
             <label>Gastos Realizados · <span style={{ color: 'var(--color-gray-400)', fontWeight: 400 }}>Material</span></label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ position: 'relative' }}>
+              <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 13, fontWeight: 600, color: matOverrun ? 'var(--color-warning)' : 'var(--color-success)', pointerEvents: 'none', zIndex: 1 }}>R$</span>
               <NumInput
                 value={etapa.gastoMaterial}
                 onChange={(v) => onChange('gastoMaterial', v)}
-                placeholder="R$ 0"
-                style={{ flex: 1, ...(matOverrun ? { borderColor: 'var(--color-warning)', color: 'var(--color-warning)' } : {}) }}
+                placeholder="0"
+                className={matOverrun ? 'input-spent-warn' : 'input-spent'}
+                style={{ width: '100%', paddingLeft: 28, paddingRight: 80, color: matOverrun ? 'var(--color-warning)' : 'var(--color-success)', fontWeight: 600, ...(matOverrun ? { borderColor: 'var(--color-warning)' } : {}) }}
               />
-              {etapa.orcamentoMaterial !== '' && etapa.orcamentoMaterial !== 0 &&
-                <span style={{ fontSize: 12, color: 'var(--color-gray-400)', whiteSpace: 'nowrap' }}>de {fmtBRLModal(etapa.orcamentoMaterial)}</span>
-              }
+              <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--color-gray-600)', whiteSpace: 'nowrap', pointerEvents: 'none' }}>de {fmtBRLModal(etapa.orcamentoMaterial || 0)}</span>
             </div>
           </div>
           {/* Mão de Obra */}
           <div className="field-group">
             <label>Gastos Realizados · <span style={{ color: 'var(--color-gray-400)', fontWeight: 400 }}>Mão de Obra</span></label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ position: 'relative' }}>
+              <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 13, fontWeight: 600, color: mobOverrun ? 'var(--color-warning)' : 'var(--color-success)', pointerEvents: 'none', zIndex: 1 }}>R$</span>
               <NumInput
                 value={etapa.gastoMaoDeObra}
                 onChange={(v) => onChange('gastoMaoDeObra', v)}
-                placeholder="R$ 0"
-                style={{ flex: 1, ...(mobOverrun ? { borderColor: 'var(--color-warning)', color: 'var(--color-warning)' } : {}) }}
+                placeholder="0"
+                className={mobOverrun ? 'input-spent-warn' : 'input-spent'}
+                style={{ width: '100%', paddingLeft: 28, paddingRight: 80, color: mobOverrun ? 'var(--color-warning)' : 'var(--color-success)', fontWeight: 600, ...(mobOverrun ? { borderColor: 'var(--color-warning)' } : {}) }}
               />
-              {etapa.orcamentoMaoDeObra !== '' && etapa.orcamentoMaoDeObra !== 0 &&
-                <span style={{ fontSize: 12, color: 'var(--color-gray-400)', whiteSpace: 'nowrap' }}>de {fmtBRLModal(etapa.orcamentoMaoDeObra)}</span>
-              }
+              <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--color-gray-600)', whiteSpace: 'nowrap', pointerEvents: 'none' }}>de {fmtBRLModal(etapa.orcamentoMaoDeObra || 0)}</span>
             </div>
           </div>
         </div>
@@ -335,15 +353,13 @@ const EtapaCard = ({ etapa, index, onChange, onDelete, onSave, pctWarning }) => 
           </div>
         </>}
 
-        {/* Gear bottom-right */}
+        {/* Edit button bottom-right */}
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <button
             onClick={() => { onChange('_editando', true); setMode('edit'); }}
-            style={{ background: 'transparent', border: 'none', color: 'var(--color-gray-300)', cursor: 'pointer', padding: 4, borderRadius: 4, display: 'flex', transition: 'color 0.15s' }}
-            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-navy)'}
-            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-gray-300)'}
-            title="Editar etapa"
-          ><IconGear /></button>
+            className="btn btn-ghost"
+            style={{ fontSize: 12 }}
+          >Editar</button>
         </div>
       </div>
     </div>
@@ -614,7 +630,7 @@ const ItemModal = ({ item, isOpen, onClose, onSave }) => {
             }
 
             {isEditing &&
-              <button onClick={handleAddEtapa} className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center', fontSize: 12, marginTop: 2, backgroundColor: 'rgb(226, 239, 246)', color: 'rgb(45, 78, 112)', borderColor: 'rgb(141, 158, 175)' }}>
+              <button onClick={handleAddEtapa} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', fontSize: 12, marginTop: 6 }}>
                 <IconPlus /> Adicionar Etapa
               </button>
             }
