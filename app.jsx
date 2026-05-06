@@ -249,78 +249,150 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
     }
   }, []);
 
-  // ── GanttItemBar — absolutely positioned within GanttItemCard ──
-  // itemOriginX: col.x of the item card's first month (right-panel coords)
-  const GanttItemBar = ({ etapa, itemOriginX }) => {
-    const col = getCol(etapa.mes);
-    if (!col) return null;
-    const totalBudget = (Number(etapa.orcamentoMaterial) || 0) + (Number(etapa.orcamentoMaoDeObra) || 0);
-    const totalGasto  = (Number(etapa.gastoMaterial) || 0) + (Number(etapa.gastoMaoDeObra) || 0);
-    const recebido    = Number(etapa.valorRecebido) || 0;
-    const overrun     = recebido > 0 && totalGasto > recebido;
-    let bg, textColor;
-    if (totalBudget === 0)           { bg = 'rgba(168,196,212,0.4)';  textColor = 'var(--color-navy-50)'; }
-    else if (etapa.feito && overrun) { bg = 'var(--color-warning)';   textColor = 'white'; }
-    else if (etapa.feito)            { bg = '#3D7E62';                textColor = 'white'; }
-    else                             { bg = 'rgba(107,163,192,0.75)'; textColor = 'white'; }
+  // ── Color theme helpers ───────────────────────────────────────────
+  const itemBarColors = ({ noBudget, done, overSpent }) => {
+    const w = 'var(--color-warning)', s = '#3D7E62', white = 'rgba(255,255,255,0.85)';
+    if (noBudget)          return { barBackground: 'rgba(168,196,212,0.35)', barSpentFill: 'rgba(107,163,192,0.2)',  barBudgetFont: 'var(--color-navy-50)', barSpentFont: 'var(--color-navy-50)', barOutline: 'transparent',             messageFontWarn: w, messageFontDone: s };
+  //if (done && overSpent) return { barBackground: 'rgba(192,138,42,0.15)',  barSpentFill: w,                        barBudgetFont: w,                      barSpentFont: w,                      barOutline: 'rgba(192,138,42,0.3)',     messageFontWarn: w, messageFontDone: s };
+    if (overSpent)         return { barBackground: 'rgba(192,138,42,0.15)',  barSpentFill: w,                        barBudgetFont: white,                  barSpentFont: w,                      barOutline: 'rgba(192,138,42,0.3)',     messageFontWarn: w, messageFontDone: s };
+    if (done)              return { barBackground: 'rgba(61,126,98,0.12)',   barSpentFill: s,                        barBudgetFont: s,                      barSpentFont: s,                      barOutline: 'rgba(61,126,98,0.25)',     messageFontWarn: w, messageFontDone: s };
+    return                        { barBackground: 'rgba(107,163,192,0.15)', barSpentFill: 'rgba(107,163,192,0.85)', barBudgetFont: 'var(--color-navy-70)', barSpentFont: 'var(--color-navy-50)', barOutline: 'rgba(107,163,192,0.3)',    messageFontWarn: w, messageFontDone: s };
+  };
+
+  const groupBarColors = ({ noBudget, done, overSpent }) => {
+    const w = 'var(--color-warning)', s = '#3D7E62';
+    if (noBudget)          return { barBackground: 'rgba(168,196,212,0.45)', barSpentFill: 'rgba(107,163,192,0.25)', barBudgetFont: 'var(--color-navy-50)', barSpentFont: 'var(--color-navy-50)', barOutline: 'transparent',             messageFontWarn: w, messageFontDone: s };
+    if (done && overSpent) return { barBackground: 'rgba(192,138,42,0.2)',   barSpentFill: w,                        barBudgetFont: w,                      barSpentFont: w,                      barOutline: 'rgba(192,138,42,0.35)',    messageFontWarn: w, messageFontDone: s };
+    if (done)              return { barBackground: 'rgba(61,126,98,0.18)',   barSpentFill: s,                        barBudgetFont: s,                      barSpentFont: s,                      barOutline: 'rgba(61,126,98,0.3)',      messageFontWarn: w, messageFontDone: s };
+    return                        { barBackground: 'rgba(107,163,192,0.22)', barSpentFill: 'rgba(107,163,192,0.9)',  barBudgetFont: 'var(--color-navy-70)', barSpentFont: 'var(--color-navy-50)', barOutline: 'rgba(107,163,192,0.4)',    messageFontWarn: w, messageFontDone: s };
+  };
+
+  // ── GanttBar — unified progress-bar component ─────────────────────
+  const GanttBar = ({ barLeft, barWidth, budget, spent, recebido, onSchedule, overSpent, done, colors }) => {
+    const spentPct = budget > 0 ? Math.min(100, spent / budget * 100) : 0;
+    const labelX   = Math.max(24, Math.min(spentPct / 100 * barWidth, barWidth - 24));
+
+    const messages = [];
+    if (!onSchedule && !done)  messages.push({ text: 'etapa atrasada',   color: colors.messageFontWarn });
+    if (overSpent)             messages.push({ text: 'gastos excedidos', color: colors.messageFontWarn });
+    if (done)                  messages.push({ text: 'etapa completa',   color: colors.messageFontDone });
+
     return (
+      // Wrapper is always exactly bar-height so top:50%/translateY(-50%) centres the bar
+      // consistently regardless of messages above or spent label below.
       <div style={{
-        position: 'absolute',
-        left: col.x - itemOriginX + 8, width: col.width - 16, height: 26,
+        position: 'absolute', left: barLeft, width: barWidth, height: 26,
         top: '50%', transform: 'translateY(-50%)',
-        borderRadius: 8, padding: '0 8px', background: bg,
-        display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 2,
-        overflow: 'hidden', boxSizing: 'border-box',
       }}>
-        {etapa.feito && (
-          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: overrun ? 'rgba(255,255,255,0.8)' : '#7dcca0', lineHeight: 1 }}>
-            etapa concluída
-          </span>
+        {/* Messages — float above the bar without shifting it */}
+        {messages.length > 0 && (
+          <div style={{
+            position: 'absolute', bottom: '100%', left: 0, right: 0,
+            marginBottom: 4,
+            display: 'flex', flexDirection: 'column', gap: 2,
+          }}>
+            {messages.map((m, i) => (
+              <span key={i} style={{
+                fontSize: 7, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase',
+                color: m.color, lineHeight: 1, fontFamily: 'var(--font-display)',
+              }}>{m.text}</span>
+            ))}
+          </div>
         )}
-        <span style={{ fontSize: 12, fontWeight: 700, color: textColor, fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1 }}>
-          {totalBudget > 0 ? fmtBRL(totalBudget) : '—'}
-        </span>
-        {totalGasto > 0 && (
-          <span style={{ fontSize: 10, color: totalBudget === 0 ? 'var(--color-navy-50)' : 'rgba(255,255,255,0.75)', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>
-            gasto {fmtK(totalGasto)}
+
+        {/* Bar */}
+        <div style={{
+          position: 'relative', width: '100%', height: '100%',
+          background: colors.barBackground,
+          border: `1px solid ${colors.barOutline}`,
+          borderRadius: 8, overflow: 'hidden', boxSizing: 'border-box',
+        }}>
+          {/* Spent fill */}
+          <div style={{
+            position: 'absolute', left: 0, top: 0, bottom: 0,
+            width: `${spentPct}%`,
+            background: colors.barSpentFill,
+            transition: 'width 0.35s var(--ease-out)',
+            borderRadius: spentPct >= 99 ? 7 : '7px 0 0 7px',
+          }} />
+          {/* Budget label — horizontally centered */}
+          <div style={{
+            position: 'absolute', inset: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '0 6px',
+          }}>
+            <span style={{
+              fontSize: 11, fontWeight: 700, color: colors.barBudgetFont,
+              fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap',
+              overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1,
+            }}>
+              {fmtBRL(budget)}
+            </span>
+          </div>
+        </div>
+
+        {/* Spent label — floats below the bar, tracks fill edge */}
+        {spent > 0 && (
+          <span style={{
+            position: 'absolute', top: '100%', marginTop: 3,
+            left: labelX, transform: 'translateX(-50%)',
+            fontSize: 10, fontWeight: 600, color: colors.barSpentFont,
+            fontFamily: 'var(--font-mono)', lineHeight: 1, whiteSpace: 'nowrap',
+          }}>
+            {fmtK(spent)}
           </span>
         )}
       </div>
     );
   };
 
-  // ── GanttGroupBar — absolutely positioned within GanttGroupCard header area ──
-  // groupOriginX: col.x of the group card's first month (right-panel coords)
+  // ── GanttItemBar — thin wrapper computing states for one etapa ────
+  const GanttItemBar = ({ etapa, itemOriginX }) => {
+    const col    = getCol(etapa.mes);
+    if (!col) return null;
+    const budget     = (Number(etapa.orcamentoMaterial) || 0) + (Number(etapa.orcamentoMaoDeObra) || 0);
+    const spent      = (Number(etapa.gastoMaterial) || 0) + (Number(etapa.gastoMaoDeObra) || 0);
+    const recebido   = Number(etapa.valorRecebido) > 0;
+    const done       = etapa.feito;
+    const overSpent  = budget > 0 && spent > budget;
+    const etapaEnd   = new Date(mesToEndISO(etapa.mes) + 'T00:00:00');
+    const onSchedule = done || etapaEnd >= today;
+    const colors     = itemBarColors({ noBudget: budget === 0, done, overSpent });
+    return <GanttBar
+      barLeft={col.x - itemOriginX + 8} barWidth={col.width - 16}
+      budget={budget} spent={spent}
+      recebido={recebido} onSchedule={onSchedule} overSpent={overSpent} done={done}
+      colors={colors}
+    />;
+  };
+
+  // ── GanttGroupBar — thin wrapper aggregating a month across all items ──
   const GanttGroupBar = ({ grupo, mes, groupOriginX }) => {
     const col = getCol(mes);
     if (!col) return null;
-    let monthBudget = 0, monthSpent = 0;
+    let budget = 0, spent = 0, recebidoSum = 0, allDone = true, hasEtapas = false, anyOverdue = false;
+    const mesEnd = new Date(mesToEndISO(mes) + 'T00:00:00');
     grupo.items.forEach(item => {
       const latest = item.versions[item.versions.length - 1];
       latest.etapas.filter(e => e.mes === mes).forEach(e => {
-        monthBudget += (Number(e.orcamentoMaterial) || 0) + (Number(e.orcamentoMaoDeObra) || 0);
-        monthSpent  += (Number(e.gastoMaterial) || 0) + (Number(e.gastoMaoDeObra) || 0);
+        hasEtapas    = true;
+        budget       += (Number(e.orcamentoMaterial) || 0) + (Number(e.orcamentoMaoDeObra) || 0);
+        spent        += (Number(e.gastoMaterial) || 0) + (Number(e.gastoMaoDeObra) || 0);
+        recebidoSum  += Number(e.valorRecebido) || 0;
+        if (!e.feito) { allDone = false; if (mesEnd < today) anyOverdue = true; }
       });
     });
-    return (
-      <div style={{
-        position: 'absolute',
-        left: col.x - groupOriginX + CARD_PAD + 8, width: col.width - 16, height: 26,
-        top: '50%', transform: 'translateY(-50%)',
-        borderRadius: 8, padding: '0 8px', background: 'rgba(107,163,192,0.85)',
-        display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 2,
-        overflow: 'hidden', boxSizing: 'border-box',
-      }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: 'white', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1 }}>
-          {monthBudget > 0 ? fmtBRL(monthBudget) : '—'}
-        </span>
-        {monthSpent > 0 && (
-          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.75)', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>
-            gasto {fmtK(monthSpent)}
-          </span>
-        )}
-      </div>
-    );
+    if (!hasEtapas) return null;
+    const done       = allDone;
+    const overSpent  = budget > 0 && spent > budget;
+    const onSchedule = done || !anyOverdue;
+    const colors     = groupBarColors({ noBudget: budget === 0, done, overSpent });
+    return <GanttBar
+      barLeft={col.x - groupOriginX + CARD_PAD + 8} barWidth={col.width - 16}
+      budget={budget} spent={spent}
+      recebido={recebidoSum > 0} onSchedule={onSchedule} overSpent={overSpent} done={done}
+      colors={colors}
+    />;
   };
 
   // ── GanttItemCard — white card for one item, vertically aligned with left column card ──
