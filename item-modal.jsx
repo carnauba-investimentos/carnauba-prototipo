@@ -1,7 +1,7 @@
-// item-modal.jsx — Carnaúba DS · restructured etapa edit/track modes
+// item-modal.jsx — Carnaúba DS · Item Tracking Drawer
 const { useState, useEffect, useRef } = React;
 
-// ── Helpers ──────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────
 const fmtBRLModal = (v) =>
   'R$ ' + new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(Number(v) || 0);
 
@@ -11,8 +11,8 @@ const fmtDatePT = (iso) => {
   return `${d}/${m}/${String(y).slice(-2)}`;
 };
 
-const MONTHS_PT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-const MONTHS_FULL_PT = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+const MONTHS_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const MONTHS_FULL_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
 const fmtMes = (mesISO) => {
   if (!mesISO) return '—';
@@ -20,16 +20,17 @@ const fmtMes = (mesISO) => {
   return `${MONTHS_FULL_PT[parseInt(m, 10) - 1]} / ${y}`;
 };
 
+const fmtMesShort = (mesISO) => {
+  if (!mesISO) return '—';
+  const [y, m] = mesISO.split('-');
+  return `${MONTHS_PT[parseInt(m, 10) - 1]} / ${y}`;
+};
+
 const newEtapaObj = () => ({
   id: `e${Date.now()}${Math.random().toString(36).slice(2, 5)}`,
-  mes: '',
-  percentual: '',
-  orcamentoMaterial: '',
-  orcamentoMaoDeObra: '',
-  descricao: '',
-  feito: false,
-  gastoMaterial: '',
-  gastoMaoDeObra: '',
+  mes: '', percentual: '', orcamentoMaterial: '', orcamentoMaoDeObra: '',
+  descricao: '', feito: false, gastoMaterial: '', gastoMaoDeObra: '',
+  valorRecebido: '',
 });
 
 // ── NumInput ──────────────────────────────────────────────────────
@@ -101,13 +102,11 @@ const MonthPicker = ({ value, onChange, disabled }) => {
           borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)',
           zIndex: 999, padding: '12px', minWidth: 240
         }}>
-          {/* Year nav */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
             <button type="button" onClick={() => setViewYear((y) => y - 1)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: 'var(--color-navy)', padding: '2px 6px' }}>‹</button>
             <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--color-navy)', fontFamily: 'var(--font-display)' }}>{viewYear}</span>
             <button type="button" onClick={() => setViewYear((y) => y + 1)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: 'var(--color-navy)', padding: '2px 6px' }}>›</button>
           </div>
-          {/* Month grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4 }}>
             {MONTHS_PT.map((m, i) => {
               const isSel = selYear === viewYear && selMonth === i;
@@ -137,234 +136,11 @@ const MonthPicker = ({ value, onChange, disabled }) => {
 };
 
 // ── Icons ─────────────────────────────────────────────────────────
-const IconClose = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>;
 const IconCalendar = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1" y="2.5" width="11" height="9.5" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M4 1v3M9 1v3M1 6h11" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>;
-const IconPlus = () => <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>;
-const IconTrash = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 3.5h10M5 3.5V2.5a.5.5 0 01.5-.5h2a.5.5 0 01.5.5v1M11 3.5l-.7 7.5a1 1 0 01-1 .9H3.7a1 1 0 01-1-.9L2 3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>;
-const IconCheck = () => <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M1.5 5.5l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>;
-const IconGear = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1 9.5h8M7 1.5l2 2L3.5 9H1.5V7L7 1.5zM10.5 4l1.5-1.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>;
-const IconWarn = () => <svg width="11" height="11" viewBox="0 0 11 11" fill="none" style={{ flexShrink: 0 }}><path d="M5.5 1L10.5 10H0.5L5.5 1z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/><path d="M5.5 4.5v2.5M5.5 8.5v.3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
-
-// ── ProgressoBar ──────────────────────────────────────────────────
-const ProgressoBar = ({ etapas }) => {
-  const pct = etapas.reduce((sum, e) => sum + (e.feito ? (Number(e.percentual) || 0) : 0), 0);
-  const clamped = Math.min(100, pct);
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-      <div style={{ flex: 1, height: 6, background: 'var(--color-sage-20)', borderRadius: 99, overflow: 'hidden' }}>
-        <div style={{ height: '100%', width: `${clamped}%`, background: clamped >= 100 ? 'var(--color-success)' : 'var(--color-sage)', borderRadius: 99, transition: 'width 0.35s var(--ease-out)' }} />
-      </div>
-      <span className="mono" style={{ fontSize: 12, fontWeight: 700, color: clamped >= 100 ? 'var(--color-success)' : 'var(--color-sage)', minWidth: 34, textAlign: 'right' }}>{clamped}%</span>
-    </div>
-  );
-};
-
-// ── EtapaCard ─────────────────────────────────────────────────────
-const EtapaCard = ({ etapa, index, onChange, onDelete, onSave, pctWarning }) => {
-  const [mode, setMode] = useState(etapa._editando ? 'edit' : 'track');
-
-  useEffect(() => {
-    if (etapa._editando) setMode('edit');
-  }, [etapa._editando]);
-
-  const S = { // shared card shell
-    background: 'var(--color-white)',
-    border: '1px solid var(--color-gray-200)',
-    borderRadius: 'var(--radius-md)',
-    boxShadow: 'var(--shadow-sm)',
-    overflow: 'hidden'
-  };
-
-  const numCircle = (
-    <div style={{
-      width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
-      border: '1.5px solid var(--color-gray-300)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: 12, fontWeight: 700, color: 'var(--color-navy)'
-    }}>{index + 1}</div>
-  );
-
-  // ── Edit mode ─────────────────────────────────────────────────
-  if (mode === 'edit') {
-    return (
-      <div style={S}>
-        {/* Top row: number · month picker · % execução */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderBottom: '1px solid var(--color-gray-200)' }}>
-          {numCircle}
-          <div style={{ flex: 1 }}>
-            <MonthPicker value={etapa.mes} onChange={(v) => onChange('mes', v)} />
-          </div>
-          <div style={{ position: 'relative', width: 130, flexShrink: 0 }}>
-            <NumInput
-              value={etapa.percentual}
-              onChange={(v) => onChange('percentual', v)}
-              placeholder="% da execução"
-              style={{
-                paddingRight: 28, textAlign: 'right',
-                ...(pctWarning ? { borderColor: 'var(--color-warning)', color: 'var(--color-warning)' } : {})
-              }}
-            />
-            <span style={{ position: 'absolute', right: 9, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: pctWarning ? 'var(--color-warning)' : 'var(--color-gray-400)', pointerEvents: 'none' }}>%</span>
-          </div>
-        </div>
-
-        {/* Budget fields + descrição */}
-        <div style={{ padding: '14px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div className="field-group">
-              <label>Orçamento · <span style={{ color: 'var(--color-gray-400)', fontWeight: 400 }}>Material</span></label>
-              <NumInput value={etapa.orcamentoMaterial} onChange={(v) => onChange('orcamentoMaterial', v)} placeholder="R$ 0" />
-            </div>
-            <div className="field-group">
-              <label>Orçamento · <span style={{ color: 'var(--color-gray-400)', fontWeight: 400 }}>Mão de Obra</span></label>
-              <NumInput value={etapa.orcamentoMaoDeObra} onChange={(v) => onChange('orcamentoMaoDeObra', v)} placeholder="R$ 0" />
-            </div>
-          </div>
-
-          <div className="field-group">
-            <label>Descrição</label>
-            <textarea
-              placeholder="Descreva o escopo desta etapa…"
-              value={etapa.descricao}
-              onChange={(e) => onChange('descricao', e.target.value)}
-              rows={4}
-            />
-          </div>
-        </div>
-
-        {/* Footer: Deletar left · Cancelar + Salvar right */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', borderTop: '1px solid var(--color-gray-200)' }}>
-          <button onClick={onDelete} className="btn btn-ghost" style={{ fontSize: 12, color: 'var(--color-gray-500)' }}>Deletar</button>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => setMode('track')} className="btn btn-ghost" style={{ fontSize: 12 }}>Cancelar</button>
-            <button onClick={() => { onSave(); setMode('track'); }} className="btn btn-primary" style={{ fontSize: 12 }}>Salvar</button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Track mode ────────────────────────────────────────────────
-  const matOverrun = Number(etapa.gastoMaterial) > Number(etapa.orcamentoMaterial) && etapa.orcamentoMaterial !== '' && etapa.orcamentoMaterial !== 0;
-  const mobOverrun = Number(etapa.gastoMaoDeObra) > Number(etapa.orcamentoMaoDeObra) && etapa.orcamentoMaoDeObra !== '' && etapa.orcamentoMaoDeObra !== 0;
-
-  const fmtMesTrack = (mes) => {
-    if (!mes) return '—';
-    const [y, m] = mes.split('-');
-    return `${MONTHS_FULL_PT[parseInt(m, 10) - 1]} | ${y}`;
-  };
-
-  return (
-    <div style={{ ...S, border: `1px solid ${etapa.feito ? 'rgba(58,143,106,0.4)' : 'var(--color-gray-200)'}` }}>
-      {/* Header: number · month/year · % execução · checkbox */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px',
-        borderBottom: '1px solid var(--color-navy-90)',
-        background: 'var(--color-navy-90)', borderRadius: '8px 8px 0 0'
-      }}>
-        {/* Circle — check when done */}
-        <div style={{
-          width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
-          border: `1.5px solid ${etapa.feito ? 'var(--color-success)' : 'rgba(255,255,255,0.3)'}`,
-          background: etapa.feito ? 'rgba(58,143,106,0.25)' : 'rgba(255,255,255,0.08)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 12, fontWeight: 700,
-          color: etapa.feito ? 'var(--color-success)' : 'rgba(255,255,255,0.7)'
-        }}>
-          {etapa.feito ? <IconCheck /> : index + 1}
-        </div>
-
-        {/* Month | Year */}
-        <span style={{ flex: 1, fontSize: 16, fontWeight: 700, color: 'var(--color-white)', fontFamily: 'var(--font-display)' }}>
-          {fmtMesTrack(etapa.mes)}
-        </span>
-
-        {/* Total spent / budget — centered */}
-        {(() => {
-          const totalGasto = (Number(etapa.gastoMaterial) || 0) + (Number(etapa.gastoMaoDeObra) || 0);
-          const totalBudget = (Number(etapa.orcamentoMaterial) || 0) + (Number(etapa.orcamentoMaoDeObra) || 0);
-          const over = totalBudget > 0 && totalGasto > totalBudget;
-          return (
-            <span style={{ flex: 1, textAlign: 'center', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', fontFamily: 'var(--font-display)' }}>
-              <span style={{ color: over ? 'var(--color-warning)' : 'var(--color-white)' }}>{fmtBRLModal(totalGasto)}</span>
-              <span style={{ color: 'rgba(255,255,255,0.6)' }}>{` / ${fmtBRLModal(totalBudget)}`}</span>
-            </span>
-          );
-        })()}
-
-        {/* % da execução */}
-        {etapa.percentual !== '' && etapa.percentual !== 0 &&
-          <span style={{ flex: 1, textAlign: 'right', fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 500, whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)' }}>
-            {etapa.percentual}% da execução
-          </span>
-        }
-
-        {/* Checkbox */}
-        <label style={{ cursor: 'pointer', display: 'flex' }} onClick={(e) => e.stopPropagation()}>
-          <input
-            type="checkbox" checked={etapa.feito}
-            onChange={(e) => onChange('feito', e.target.checked)}
-            style={{ width: 20, height: 20, cursor: 'pointer', accentColor: 'var(--color-success)' }}
-          />
-        </label>
-      </div>
-
-      {/* Body */}
-      <div style={{ padding: '14px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-        {/* Gastos grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          {/* Material */}
-          <div className="field-group">
-            <label>Gastos Realizados · <span style={{ color: 'var(--color-gray-400)', fontWeight: 400 }}>Material</span></label>
-            <div style={{ position: 'relative' }}>
-              <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 13, fontWeight: 600, color: matOverrun ? 'var(--color-warning)' : 'var(--color-success)', pointerEvents: 'none', zIndex: 1 }}>R$</span>
-              <NumInput
-                value={etapa.gastoMaterial}
-                onChange={(v) => onChange('gastoMaterial', v)}
-                placeholder="0"
-                className={matOverrun ? 'input-spent-warn' : 'input-spent'}
-                style={{ width: '100%', paddingLeft: 28, paddingRight: 80, color: matOverrun ? 'var(--color-warning)' : 'var(--color-success)', fontWeight: 600, ...(matOverrun ? { borderColor: 'var(--color-warning)' } : {}) }}
-              />
-              <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--color-gray-600)', whiteSpace: 'nowrap', pointerEvents: 'none' }}>de {fmtBRLModal(etapa.orcamentoMaterial || 0)}</span>
-            </div>
-          </div>
-          {/* Mão de Obra */}
-          <div className="field-group">
-            <label>Gastos Realizados · <span style={{ color: 'var(--color-gray-400)', fontWeight: 400 }}>Mão de Obra</span></label>
-            <div style={{ position: 'relative' }}>
-              <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 13, fontWeight: 600, color: mobOverrun ? 'var(--color-warning)' : 'var(--color-success)', pointerEvents: 'none', zIndex: 1 }}>R$</span>
-              <NumInput
-                value={etapa.gastoMaoDeObra}
-                onChange={(v) => onChange('gastoMaoDeObra', v)}
-                placeholder="0"
-                className={mobOverrun ? 'input-spent-warn' : 'input-spent'}
-                style={{ width: '100%', paddingLeft: 28, paddingRight: 80, color: mobOverrun ? 'var(--color-warning)' : 'var(--color-success)', fontWeight: 600, ...(mobOverrun ? { borderColor: 'var(--color-warning)' } : {}) }}
-              />
-              <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--color-gray-600)', whiteSpace: 'nowrap', pointerEvents: 'none' }}>de {fmtBRLModal(etapa.orcamentoMaoDeObra || 0)}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Descrição */}
-        {etapa.descricao && <>
-          <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--color-gray-400)', fontFamily: 'var(--font-display)' }}>Descrição</div>
-          <div style={{ fontSize: 13, color: 'var(--color-gray-600)', lineHeight: 1.6, whiteSpace: 'pre-wrap', marginTop: -8 }}>
-            {etapa.descricao}
-          </div>
-        </>}
-
-        {/* Edit button bottom-right */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-          <button
-            onClick={() => { onChange('_editando', true); setMode('edit'); }}
-            className="btn btn-ghost"
-            style={{ fontSize: 12 }}
-          >Editar</button>
-        </div>
-      </div>
-    </div>
-  );
-};
+const IconCheck  = () => <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M1.5 5.5l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+const IconWarn   = () => <svg width="11" height="11" viewBox="0 0 11 11" fill="none" style={{ flexShrink: 0 }}><path d="M5.5 1L10.5 10H0.5L5.5 1z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/><path d="M5.5 4.5v2.5M5.5 8.5v.3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+const IconPencil = () => <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M7.5 1.5l2 2L3 10H1V8L7.5 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>;
+const IconEditSm = () => <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M1 9.5h9M7 1.5l2 2L3.5 9H1.5V7L7 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>;
 
 // ── ConfirmDialog ─────────────────────────────────────────────────
 const ConfirmDialog = ({ show, nextVersionNumber, onConfirm, onCancel }) => {
@@ -377,7 +153,7 @@ const ConfirmDialog = ({ show, nextVersionNumber, onConfirm, onCancel }) => {
         transform: 'translate(-50%, -50%)',
         width: 380, background: 'var(--color-white)',
         borderRadius: 'var(--radius-lg)', padding: '28px 28px 22px',
-        boxShadow: 'var(--shadow-xl)', zIndex: 11
+        boxShadow: 'var(--shadow-xl)', zIndex: 11,
       }}>
         <div style={{ marginBottom: 6, fontSize: 15, fontWeight: 700, color: 'var(--color-navy)' }}>
           Salvar como versão {nextVersionNumber}?
@@ -394,89 +170,62 @@ const ConfirmDialog = ({ show, nextVersionNumber, onConfirm, onCancel }) => {
   );
 };
 
-// ── ItemModal ─────────────────────────────────────────────────────
-const ItemModal = ({ item, isOpen, onClose, onSave }) => {
+// ── ItemDrawer ────────────────────────────────────────────────────
+const ItemDrawer = ({ item, isOpen, onClose, onSave, onDelete }) => {
   const [activeVersionIdx, setActiveVersionIdx] = useState(0);
-  const [editNome, setEditNome] = useState('');
   const [editEtapas, setEditEtapas] = useState([]);
+  const [showEdit, setShowEdit] = useState(false);
   const [pendingSave, setPendingSave] = useState(null);
-  const [pctError, setPctError] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const isNewItem = !item;
   const latestIdx = item ? item.versions.length - 1 : -1;
-  const isEditing = isNewItem || activeVersionIdx === latestIdx;
+  const isLatest  = activeVersionIdx === latestIdx;
 
   useEffect(() => {
-    if (isOpen) {
-      if (item) {
-        const latest = item.versions[item.versions.length - 1];
-        setActiveVersionIdx(item.versions.length - 1);
-        setEditNome(latest.nome);
-        setEditEtapas(JSON.parse(JSON.stringify(latest.etapas)));
-      } else {
-        setEditNome('');
-        // Start with one empty etapa in edit mode
-        setEditEtapas([{ ...newEtapaObj(), _editando: true }]);
-      }
+    if (isOpen && item) {
+      const idx = item.versions.length - 1;
+      setActiveVersionIdx(idx);
+      setEditEtapas(JSON.parse(JSON.stringify(item.versions[idx].etapas)));
+      setShowEdit(false);
       setPendingSave(null);
-      setPctError(false);
     }
   }, [isOpen, item]);
 
   const switchVersion = (idx) => {
     setActiveVersionIdx(idx);
-    const v = item.versions[idx];
-    setEditNome(v.nome);
-    setEditEtapas(JSON.parse(JSON.stringify(v.etapas)));
+    if (idx === item.versions.length - 1) {
+      setEditEtapas(JSON.parse(JSON.stringify(item.versions[idx].etapas)));
+    }
   };
 
   const handleEtapaChange = (idx, field, value) => {
-    if (!isEditing) return;
-    setEditEtapas((prev) => prev.map((e, i) => i === idx ? { ...e, [field]: value } : e));
-    if (field === 'percentual') setPctError(false);
+    if (!isLatest) return;
+    setEditEtapas(prev => prev.map((e, i) => i === idx ? { ...e, [field]: value } : e));
   };
 
-  const handleDeleteEtapa = (idx) => {
-    if (!isEditing) return;
-    setEditEtapas((prev) => prev.filter((_, i) => i !== idx));
-  };
-
-  const handleAddEtapa = () => {
-    if (!isEditing) return;
-    setEditEtapas((prev) => [...prev, { ...newEtapaObj(), _editando: true }]);
-  };
-
-  const checkNeedsNewVersion = () => {
-    if (isNewItem) return false;
+  const checkNeedsNewVersion = (newEtapas) => {
     const saved = item.versions[item.versions.length - 1].etapas;
-    if (editEtapas.length !== saved.length) return true;
-    for (let i = 0; i < editEtapas.length; i++) {
+    if (newEtapas.length !== saved.length) return true;
+    for (let i = 0; i < newEtapas.length; i++) {
       const s = saved[i] || {};
-      const e = editEtapas[i];
+      const e = newEtapas[i];
       if (
-        String(e.percentual) !== String(s.percentual) ||
-        (e.mes || '') !== (s.mes || '') ||
-        String(e.orcamentoMaterial) !== String(s.orcamentoMaterial) ||
+        String(e.percentual)         !== String(s.percentual) ||
+        (e.mes || '')                !== (s.mes || '') ||
+        String(e.orcamentoMaterial)  !== String(s.orcamentoMaterial) ||
         String(e.orcamentoMaoDeObra) !== String(s.orcamentoMaoDeObra)
       ) return true;
     }
     return false;
   };
 
-  const handleSaveClick = () => {
-    // Validate % sum
-    const totalPct = editEtapas.reduce((sum, e) => sum + (Number(e.percentual) || 0), 0);
-    if (editEtapas.length > 0 && totalPct !== 100) {
-      setPctError(true);
-      return;
-    }
-    setPctError(false);
-
-    const needsNewVersion = checkNeedsNewVersion();
-    if (needsNewVersion) {
-      setPendingSave({ nome: editNome, etapas: editEtapas, isNewVersion: true });
+  const handleEditSave = ({ nome, etapas }) => {
+    setShowEdit(false);
+    if (checkNeedsNewVersion(etapas)) {
+      setPendingSave({ nome, etapas });
     } else {
-      onSave({ nome: editNome, etapas: editEtapas, needsNewVersion: false });
+      setEditEtapas(JSON.parse(JSON.stringify(etapas)));
+      onSave({ nome, etapas, needsNewVersion: false });
     }
   };
 
@@ -486,167 +235,249 @@ const ItemModal = ({ item, isOpen, onClose, onSave }) => {
     setPendingSave(null);
   };
 
-  if (!isOpen) return null;
+  const handleFooterSave = () => {
+    const activeVersion = item.versions[activeVersionIdx];
+    onSave({ nome: activeVersion.nome, etapas: editEtapas, needsNewVersion: false });
+  };
 
-  const displayedEtapas = isEditing ? editEtapas : item.versions[activeVersionIdx].etapas;
-  const displayedNome = isEditing ? editNome : item.versions[activeVersionIdx].nome;
-  const nextVersionNumber = item ? item.versions.length + 1 : 1;
+  if (!isOpen || !item) return null;
 
-  const totalPct = editEtapas.reduce((sum, e) => sum + (Number(e.percentual) || 0), 0);
+  const activeVersion  = item.versions[activeVersionIdx];
+  const displayedEtapas = isLatest ? editEtapas : activeVersion.etapas;
+  const nome            = activeVersion.nome;
+  const nextVersionNum  = item.versions.length + 1;
+
+  const etapasWithMes = displayedEtapas.filter(e => e.mes);
+  const startMes = etapasWithMes[0]?.mes;
+  const endMes   = etapasWithMes[etapasWithMes.length - 1]?.mes;
+
+  const totalSolicitado = editEtapas.reduce((s, e) => s + (Number(e.orcamentoMaterial) || 0) + (Number(e.orcamentoMaoDeObra) || 0), 0);
+  const totalRecebido   = editEtapas.reduce((s, e) => s + (Number(e.valorRecebido) || 0), 0);
+  const totalGasto      = editEtapas.reduce((s, e) => s + (Number(e.gastoMaterial) || 0) + (Number(e.gastoMaoDeObra) || 0), 0);
+
+  const editInitialData = {
+    nome: item.versions[latestIdx].nome,
+    etapas: JSON.parse(JSON.stringify(editEtapas)),
+  };
 
   return (
     <>
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(13,27,38,0.35)', zIndex: 100, backdropFilter: 'blur(3px)', animation: 'fadeInBg 0.2s ease' }} />
+      <style>{`
+        @keyframes idSlideIn { from { transform: translateX(-32px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes idFadeIn  { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+      `}</style>
 
+      {/* Backdrop */}
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(13,27,38,0.35)', backdropFilter: 'blur(3px)' }} />
+
+      {/* Drawer — LEFT side */}
       <div style={{
-        position: 'fixed', top: 0, right: 0, bottom: 0,
-        width: 620, background: 'var(--color-gray-100)',
+        position: 'fixed', left: 0, top: 0, bottom: 0, width: 560,
+        background: 'var(--color-white)',
         zIndex: 101, display: 'flex', flexDirection: 'column',
-        boxShadow: '-16px 0 64px rgba(13,27,38,0.18)',
-        animation: 'slideInRight 0.28s cubic-bezier(0.16,1,0.3,1)'
+        boxShadow: '16px 0 64px rgba(13,27,38,0.18)',
+        animation: 'idSlideIn 0.28s cubic-bezier(0.16,1,0.3,1)',
       }}>
 
-        {pendingSave &&
+        {pendingSave && (
           <ConfirmDialog
             show={!!pendingSave}
-            nextVersionNumber={nextVersionNumber}
+            nextVersionNumber={nextVersionNum}
             onConfirm={handleConfirmSave}
             onCancel={() => setPendingSave(null)}
           />
-        }
+        )}
 
-        {/* Version tabs / header */}
-        <div style={{
-          height: 44, background: 'var(--color-white)',
-          borderBottom: '1px solid var(--color-gray-200)',
-          display: 'flex', alignItems: 'center',
-          padding: '0 16px', gap: 4, flexShrink: 0, overflowX: 'auto'
-        }}>
-          {item ? (
-            <>
-              <span style={{ fontSize: 10, color: 'var(--color-gray-400)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: 'var(--font-display)', marginRight: 6, whiteSpace: 'nowrap' }}>Versões</span>
-              {item.versions.map((v, idx) =>
-                <button key={v.number} onClick={() => switchVersion(idx)} style={{
-                  padding: '4px 10px', borderRadius: 'var(--radius-sm)',
-                  background: activeVersionIdx === idx ? 'rgba(27,60,95,0.08)' : 'transparent',
-                  color: activeVersionIdx === idx ? 'var(--color-navy)' : 'var(--color-gray-600)',
-                  fontFamily: 'var(--font-mono)', fontSize: 11, cursor: 'pointer',
-                  fontWeight: activeVersionIdx === idx ? 700 : 400,
-                  whiteSpace: 'nowrap', transition: 'all 0.15s',
-                  border: activeVersionIdx === idx ? '1px solid var(--color-navy-20)' : '1px solid transparent'
-                }}>
-                  v{v.number} · {v.date ? fmtDatePT(v.date) : '—'}
-                </button>
-              )}
-              <div style={{ flex: 1 }} />
-              {!isEditing && <span style={{ fontSize: 11, color: 'var(--color-gray-400)', fontStyle: 'italic', marginRight: 8 }}>somente leitura</span>}
-            </>
-          ) : (
-            <span style={{ fontSize: 11, color: 'var(--color-gray-400)', fontWeight: 500 }}>Novo Item de Cronograma</span>
-          )}
-          <div style={{ flex: item ? 0 : 1 }} />
-          <button onClick={onClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-gray-400)', padding: 4, borderRadius: 4, display: 'flex', transition: 'color 0.15s', flexShrink: 0 }}
-            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-navy)'}
-            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-gray-400)'}>
-            <IconClose />
-          </button>
-        </div>
-
-        {/* Scrollable body */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
-
-          {/* Nome */}
-          <div style={{ marginBottom: 6 }}>
-            <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-gray-400)', fontFamily: 'var(--font-display)', marginBottom: 6 }}>
-              Item de Cronograma
-            </div>
-            <input
-              type="text"
-              placeholder="Nome do item (ex.: Fundação, Estrutura de Aço…)"
-              value={displayedNome}
-              onChange={(e) => isEditing && setEditNome(e.target.value)}
-              disabled={!isEditing}
-              style={{
-                fontSize: 20, fontWeight: 700, padding: '6px 0',
-                border: 'none', borderBottom: isEditing ? '2px solid var(--color-gray-200)' : '2px solid transparent',
-                borderRadius: 0, background: 'transparent',
-                color: 'var(--color-navy)', transition: 'border-color 0.15s',
-                fontFamily: 'var(--font-display)'
-              }}
-              onFocus={(e) => isEditing && (e.target.style.borderBottomColor = 'var(--color-blue)')}
-              onBlur={(e) => { e.target.style.borderBottomColor = isEditing ? 'var(--color-gray-200)' : 'transparent'; }}
-            />
-          </div>
-
-          {/* Progress bar */}
-          {displayedEtapas.length > 0 &&
-            <div style={{ marginBottom: 24, marginTop: 14 }}>
-              <ProgressoBar etapas={displayedEtapas} />
-            </div>
-          }
-
-          {/* % error banner */}
-          {pctError &&
+        {confirmDelete && (
+          <>
+            <div onClick={() => setConfirmDelete(false)} style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'rgba(13,27,38,0.4)', backdropFilter: 'blur(2px)' }} />
             <div style={{
-              display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16,
-              background: 'rgba(192,138,42,0.1)', border: '1px solid rgba(192,138,42,0.35)',
-              borderRadius: 'var(--radius-sm)', padding: '9px 12px',
-              color: 'var(--color-warning)', fontSize: 12, fontWeight: 500
+              position: 'absolute', top: '50%', left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 360, background: 'var(--color-white)',
+              borderRadius: 'var(--radius-lg)', padding: '28px 28px 22px',
+              boxShadow: 'var(--shadow-xl)', zIndex: 11,
             }}>
-              <IconWarn />
-              A soma dos % de execução deve ser exatamente 100%. Atual: {totalPct}%.
-            </div>
-          }
-
-          <div className="divider" style={{ marginBottom: 18 }} />
-
-          {/* Etapas section */}
-          <div style={{ marginBottom: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-              <span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-gray-600)', fontFamily: 'var(--font-display)' }}>
-                Etapas · {displayedEtapas.length}
-                {isEditing && displayedEtapas.length > 0 &&
-                  <span className="mono" style={{ marginLeft: 8, fontWeight: 500, color: totalPct === 100 ? 'var(--color-success)' : pctError ? 'var(--color-warning)' : 'var(--color-gray-400)', textTransform: 'none', letterSpacing: 0 }}>
-                    {totalPct}% alocado
-                  </span>
-                }
-              </span>
-            </div>
-
-            {displayedEtapas.length > 0 &&
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 10 }}>
-                {displayedEtapas.map((etapa, idx) =>
-                  <EtapaCard
-                    key={etapa.id}
-                    etapa={etapa}
-                    index={idx}
-                    onChange={(field, value) => handleEtapaChange(idx, field, value)}
-                    onDelete={() => handleDeleteEtapa(idx)}
-                    onSave={() => handleEtapaChange(idx, '_editando', false)}
-                    pctWarning={pctError}
-                  />
-                )}
+              <div style={{ marginBottom: 6, fontSize: 15, fontWeight: 700, color: 'var(--color-navy)' }}>
+                Apagar "{nome}"?
               </div>
-            }
+              <p style={{ fontSize: 13, color: 'var(--color-gray-600)', lineHeight: 1.55, marginBottom: 20 }}>
+                Essa ação é permanente e não pode ser desfeita. Todo o histórico de versões será removido.
+              </p>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                <button onClick={() => setConfirmDelete(false)} className="btn btn-ghost">Cancelar</button>
+                <button
+                  onClick={onDelete}
+                  style={{ background: 'var(--color-error)', color: 'white', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', padding: '8px 18px', fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-display)' }}
+                >
+                  Apagar
+                </button>
+              </div>
+            </div>
+          </>
+        )}
 
-            {isEditing &&
-              <button onClick={handleAddEtapa} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', fontSize: 12, marginTop: 6 }}>
-                <IconPlus /> Adicionar Etapa
+        {/* ── Header ── */}
+        <div style={{
+          padding: '14px 20px 10px',
+          background: 'var(--color-white)',
+          borderBottom: '1px solid var(--color-gray-200)',
+          flexShrink: 0,
+        }}>
+          {/* Name row + Editar */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{
+                fontWeight: 700, fontFamily: 'var(--font-display)', fontSize: 15,
+                color: 'var(--color-navy)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>
+                {nome}
+              </div>
+              {startMes && endMes && (
+                <div style={{ fontSize: 12, color: 'var(--color-navy-50)', fontFamily: 'var(--font-display)', marginTop: 2 }}>
+                  {fmtMesShort(startMes)} a {fmtMesShort(endMes)}
+                </div>
+              )}
+            </div>
+
+            {isLatest && (
+              <button
+                onClick={() => setShowEdit(true)}
+                style={{
+                  background: 'transparent', border: '1px solid var(--color-gray-200)',
+                  borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+                  padding: '5px 12px', fontSize: 12, fontWeight: 600,
+                  color: 'var(--color-navy-70)', fontFamily: 'var(--font-display)',
+                  display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0,
+                  transition: 'border-color 0.15s, color 0.15s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-navy)'; e.currentTarget.style.color = 'var(--color-navy)'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-gray-200)'; e.currentTarget.style.color = 'var(--color-navy-70)'; }}
+              >
+                <IconEditSm /> Editar
               </button>
-            }
+            )}
           </div>
+
+          {/* Version tags */}
+          {item.versions.length > 0 && (
+            <div style={{ display: 'flex', gap: 4, marginTop: 8, flexWrap: 'wrap' }}>
+              {item.versions.map((v, idx) => (
+                <button
+                  key={v.number}
+                  onClick={() => switchVersion(idx)}
+                  style={{
+                    padding: '2px 8px', borderRadius: 'var(--radius-sm)',
+                    background: activeVersionIdx === idx ? 'var(--color-navy)' : 'transparent',
+                    color: activeVersionIdx === idx ? 'white' : 'var(--color-gray-500)',
+                    border: activeVersionIdx === idx ? '1px solid var(--color-navy)' : '1px solid var(--color-gray-200)',
+                    fontSize: 10, fontFamily: 'var(--font-mono)', cursor: 'pointer',
+                    fontWeight: activeVersionIdx === idx ? 700 : 400,
+                    transition: 'all 0.15s',
+                  }}
+                  onMouseEnter={e => { if (activeVersionIdx !== idx) e.currentTarget.style.background = 'var(--color-gray-100)'; }}
+                  onMouseLeave={e => { if (activeVersionIdx !== idx) e.currentTarget.style.background = 'transparent'; }}
+                >
+                  v{v.number}{v.date ? ` · ${fmtDatePT(v.date)}` : ''}
+                </button>
+              ))}
+              {!isLatest && (
+                <span style={{ fontSize: 10, color: 'var(--color-gray-400)', fontStyle: 'italic', display: 'flex', alignItems: 'center', marginLeft: 4 }}>
+                  somente leitura
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Footer */}
-        {isEditing &&
-          <div style={{ padding: '12px 24px', borderTop: '1px solid var(--color-gray-200)', background: 'var(--color-white)', display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center', flexShrink: 0 }}>
-            <button onClick={onClose} className="btn btn-ghost">Cancelar</button>
-            <button onClick={handleSaveClick} className="btn btn-primary">Salvar</button>
+        {/* ── Scrollable body ── */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 16px' }}>
+
+          {/* Consolidated bars */}
+          <div style={{
+            background: 'var(--color-white)', borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--color-gray-200)',
+            padding: '16px 16px', marginBottom: 16,
+            display: 'flex', flexDirection: 'column', gap: 10,
+          }}>
+            <BudgetBar label="Solicitado" value={totalSolicitado} total={totalSolicitado} fillColor="var(--color-gray-400)" trackColor="var(--color-gray-200)" />
+            <BudgetBar label="Recebido"   value={totalRecebido}   total={totalSolicitado} fillColor="var(--color-blue)"    trackColor="var(--color-navy-20)" />
+            <BudgetBar label="Gasto"      value={totalGasto}      total={totalSolicitado} fillColor={totalRecebido > 0 && totalGasto > totalRecebido ? 'var(--color-warning)' : 'var(--color-success)'} trackColor="var(--color-gray-200)" />
           </div>
-        }
+
+          {/* Month cards */}
+          {displayedEtapas.map((etapa, idx) => (
+            <MonthCard
+              key={etapa.id || idx}
+              etapa={etapa}
+              index={idx}
+              onChange={(field, value) => handleEtapaChange(idx, field, value)}
+              isReadOnly={!isLatest}
+            />
+          ))}
+        </div>
+
+        {/* ── Footer ── */}
+        <div style={{
+          padding: '12px 20px', borderTop: '1px solid var(--color-gray-200)',
+          background: 'var(--color-white)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          flexShrink: 0,
+        }}>
+          <button
+            onClick={() => setConfirmDelete(true)}
+            style={{
+              background: 'transparent', border: '1px solid rgba(192,57,43,0.3)',
+              borderRadius: 'var(--radius-md)', cursor: 'pointer', padding: '8px 16px',
+              fontSize: 13, fontWeight: 600, color: 'var(--color-error)',
+              fontFamily: 'var(--font-display)', transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(192,57,43,0.07)'; e.currentTarget.style.borderColor = 'var(--color-error)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(192,57,43,0.3)'; }}
+          >
+            Apagar
+          </button>
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={onClose}
+              style={{
+                background: 'transparent', border: '1px solid var(--color-gray-200)',
+                borderRadius: 'var(--radius-md)', cursor: 'pointer', padding: '8px 16px',
+                fontSize: 13, fontWeight: 600, color: 'var(--color-navy-70)',
+                fontFamily: 'var(--font-display)',
+              }}
+            >
+              Cancelar
+            </button>
+            {isLatest && (
+              <button
+                onClick={handleFooterSave}
+                style={{
+                  background: 'var(--color-navy)', color: 'white', border: 'none',
+                  borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                  padding: '8px 22px', fontSize: 13, fontWeight: 700,
+                  fontFamily: 'var(--font-display)', boxShadow: 'var(--shadow-sm)',
+                }}
+              >
+                Salvar
+              </button>
+            )}
+          </div>
+        </div>
       </div>
+
+      {/* Edit mode — NovoItemDrawer layered on top */}
+      {showEdit && (
+        <NovoItemDrawer
+          isOpen={showEdit}
+          onClose={() => setShowEdit(false)}
+          onSave={handleEditSave}
+          initialData={editInitialData}
+        />
+      )}
     </>
   );
 };
 
-Object.assign(window, { ItemModal });
+Object.assign(window, { ItemModal: ItemDrawer });

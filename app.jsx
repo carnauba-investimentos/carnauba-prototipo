@@ -16,6 +16,11 @@ const fmtCurrency = (v) =>
 const fmtBRL = (v) =>
   'R$ ' + new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(Number(v) || 0);
 
+const fmtK = (v) => {
+  const n = Number(v) || 0;
+  return n >= 1000 ? Math.round(n / 1000) + 'K' : String(Math.round(n));
+};
+
 const diffDays = (a, b) => {
   if (!a || !b) return 0;
   return Math.max(0, Math.round((new Date(b + 'T00:00:00') - new Date(a + 'T00:00:00')) / 86400000));
@@ -51,25 +56,14 @@ const getTotalSpent = (v) =>
   (v?.etapas || []).reduce((s, e) => s + (Number(e.gastoMaterial) || 0) + (Number(e.gastoMaoDeObra) || 0), 0);
 
 // ── Gantt layout constants ─────────────────────────────────────────
-const MAIN_BAR_H    = 25;
-const PREV_BAR_H    = 10;
-const BAR_GAP       = 7;
-const TOP_PAD       = 14;
-const BOTTOM_PAD    = 10;
-const LEFT_COL_W    = 300;
-const HEADER_H      = 40;
-const GROUP_SEP_H   = 48; // height of group separator row in the timeline
-
-const rowHeight = (numVersions) =>
-  Math.max(140, TOP_PAD + MAIN_BAR_H + (numVersions - 1) * (PREV_BAR_H + BAR_GAP) + BOTTOM_PAD);
-
-const barY = (vIdx, total, rowH) => {
-  const stackH    = MAIN_BAR_H + Math.max(0, total - 1) * (PREV_BAR_H + BAR_GAP);
-  const topOffset = Math.max(10, Math.round((rowH - stackH) / 2));
-  const order     = total - 1 - vIdx;
-  if (order === 0) return topOffset;
-  return topOffset + MAIN_BAR_H + BAR_GAP + (order - 1) * (PREV_BAR_H + BAR_GAP);
-};
+const PX_DAY             = 3.5;
+const COL_GAP            = 8;
+const CARD_PAD           = 8;
+const LEFT_COL_W         = 300;
+const HEADER_H           = 40;
+const GROUP_ROW_H        = 164; // 8px top margin + card content
+const GROUP_FOOTER_ROW_H = 48;  // footer card + 8px bottom margin
+const ITEM_ROW_H         = 165; // 5px v-padding each side + ItemCronograma
 
 // ── Icons ─────────────────────────────────────────────────────────
 const IconCalendar = () =>
@@ -99,192 +93,7 @@ const IconEdit = () =>
     <path d="M1 9.5h9M7 1.5l2 2L3.5 9H1.5V7L7 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
   </svg>;
 
-// ── Portal Tooltip ─────────────────────────────────────────────────
-const PortalTooltip = ({ anchorRect, children }) => {
-  if (!anchorRect) return null;
-  const left = anchorRect.left;
-  const top  = anchorRect.top - 10;
-  return ReactDOM.createPortal(
-    <div style={{
-      position: 'fixed', left, top, transform: 'translateY(-100%)',
-      zIndex: 99999, background: 'var(--color-gray-800)', color: 'white',
-      borderRadius: 'var(--radius-md)', padding: '12px 14px',
-      fontSize: 11, fontFamily: 'var(--font-body)', lineHeight: 1.6,
-      boxShadow: 'var(--shadow-xl)', minWidth: 220,
-      pointerEvents: 'none', whiteSpace: 'nowrap',
-    }}>
-      {children}
-      <div style={{
-        position: 'absolute', top: '100%', left: 18,
-        width: 0, height: 0,
-        borderLeft: '5px solid transparent', borderRight: '5px solid transparent',
-        borderTop: '5px solid var(--color-gray-800)',
-      }} />
-    </div>,
-    document.body
-  );
-};
 
-// ── StepBar ────────────────────────────────────────────────────────
-const StepBar = ({ etapa, eIdx, ex, ew, by, bh, onItemClick }) => {
-  const [anchorRect, setAnchorRect] = useState(null);
-  const ref = useRef(null);
-
-  const budgetMat  = Number(etapa.orcamentoMaterial) || 0;
-  const budgetMob  = Number(etapa.orcamentoMaoDeObra) || 0;
-  const gastoMat   = Number(etapa.gastoMaterial) || 0;
-  const gastoMob   = Number(etapa.gastoMaoDeObra) || 0;
-  const totalBudget = budgetMat + budgetMob;
-  const totalGasto  = gastoMat + gastoMob;
-
-  const MONTHS_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  const fmtMesShort = (mes) => {
-    if (!mes) return '—';
-    const [y, m] = mes.split('-');
-    return `${MONTHS_FULL[parseInt(m, 10) - 1]} ${y}`;
-  };
-
-  const spentOverBudget = totalBudget > 0 && totalGasto > totalBudget;
-  const monthOver = (() => {
-    if (!etapa.mes || etapa.feito) return false;
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    const end   = new Date(mesToEndISO(etapa.mes) + 'T00:00:00');
-    return today > end;
-  })();
-
-  const tooltip = (
-    <div>
-      <div style={{ fontWeight: 700, marginBottom: 6, color: 'rgba(255,255,255,0.9)', borderBottom: '1px solid rgba(255,255,255,0.12)', paddingBottom: 5 }}>
-        Etapa {eIdx + 1}{etapa.mes ? ` · ${fmtMesShort(etapa.mes)}` : ''}
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, fontFamily: 'var(--font-mono)' }}>
-        {etapa.percentual !== '' && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
-            <span style={{ opacity: 0.6 }}>Execução</span>
-            <span>{etapa.percentual}%</span>
-          </div>
-        )}
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
-          <span style={{ opacity: 0.6 }}>Material</span>
-          <span>{budgetMat > 0 ? `${fmtBRL(gastoMat)} / ${fmtBRL(budgetMat)}` : gastoMat > 0 ? fmtBRL(gastoMat) : '—'}</span>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
-          <span style={{ opacity: 0.6 }}>Mão de Obra</span>
-          <span>{budgetMob > 0 ? `${fmtBRL(gastoMob)} / ${fmtBRL(budgetMob)}` : gastoMob > 0 ? fmtBRL(gastoMob) : '—'}</span>
-        </div>
-      </div>
-    </div>
-  );
-
-  const LABEL_H = 16;
-  const spentPct = totalBudget > 0 ? Math.min(100, (totalGasto / totalBudget) * 100) : 0;
-
-  let barBg, barBorderColor, barBorderWidth, fillBg, showProgressFill, textColor, barLabel;
-
-  if (etapa.feito && spentOverBudget) {
-    barBg = 'var(--color-warning)'; barBorderColor = 'var(--color-success)'; barBorderWidth = '2px';
-    fillBg = null; showProgressFill = false; textColor = 'rgba(255,255,255,0.9)';
-    barLabel = totalGasto > 0 ? fmtBRL(totalGasto) : null;
-  } else if (etapa.feito) {
-    barBg = '#6CA48C'; barBorderColor = 'var(--color-success)'; barBorderWidth = '2px';
-    fillBg = 'var(--color-success)'; showProgressFill = true; textColor = 'rgba(255,255,255,0.9)';
-    barLabel = fmtBRL(totalBudget);
-  } else if (spentOverBudget) {
-    barBg = 'var(--color-warning)'; barBorderColor = 'var(--color-warning)'; barBorderWidth = '1px';
-    fillBg = null; showProgressFill = false; textColor = 'rgba(255,255,255,0.9)';
-    barLabel = fmtBRL(totalGasto);
-  } else {
-    barBg = 'var(--color-sage-50)';
-    barBorderColor = monthOver ? 'var(--color-warning)' : 'var(--color-sage-80)';
-    barBorderWidth = monthOver ? '2px' : '1px';
-    fillBg = 'var(--color-sage)'; showProgressFill = true; textColor = 'var(--color-navy)';
-    barLabel = fmtBRL(totalBudget);
-  }
-
-  return (
-    <>
-      <div style={{
-        position: 'absolute', left: ex, top: by - LABEL_H - 2,
-        width: ew, height: LABEL_H,
-        display: 'flex', alignItems: 'center', justifyContent: 'flex-start',
-        padding: '0 6px', pointerEvents: 'none', overflow: 'hidden',
-      }}>
-        {etapa.feito ? (
-          <span className="mono" style={{ fontSize: 9, fontWeight: 700, whiteSpace: 'nowrap', color: 'var(--color-success)', letterSpacing: '0.05em' }}>
-            etapa completa
-          </span>
-        ) : monthOver ? (
-          <span className="mono" style={{ fontSize: 9, fontWeight: 700, whiteSpace: 'nowrap', color: 'var(--color-warning)', letterSpacing: '0.05em' }}>
-            etapa atrasada
-          </span>
-        ) : null}
-      </div>
-
-      <div
-        ref={ref}
-        onClick={onItemClick}
-        onMouseEnter={(e) => { ref.current && setAnchorRect(ref.current.getBoundingClientRect()); e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; }}
-        onMouseLeave={(e) => { setAnchorRect(null); e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
-        style={{
-          position: 'absolute', left: ex, top: by, width: ew, height: bh,
-          background: barBg, border: `${barBorderWidth} solid ${barBorderColor}`,
-          borderRadius: 5, zIndex: 4, cursor: 'pointer',
-          transition: 'opacity 0.15s, transform 0.1s, box-shadow 0.1s',
-          boxShadow: 'var(--shadow-sm)', overflow: 'hidden',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}
-      >
-        {showProgressFill && spentPct > 0 && (
-          <div style={{
-            position: 'absolute', left: 0, top: 0, width: `${spentPct}%`, height: '100%',
-            background: fillBg, borderRadius: spentPct >= 100 ? 5 : '3px 0 0 3px', pointerEvents: 'none',
-          }} />
-        )}
-        {barLabel && (
-          <span className="mono" style={{ position: 'relative', zIndex: 1, fontSize: 11, fontWeight: 600, color: textColor, pointerEvents: 'none', whiteSpace: 'nowrap' }}>
-            {barLabel}
-          </span>
-        )}
-        {anchorRect && <PortalTooltip anchorRect={anchorRect}>{tooltip}</PortalTooltip>}
-      </div>
-    </>
-  );
-};
-
-// ── BarRow ─────────────────────────────────────────────────────────
-const BarRow = ({ label, pct, valueFmt, overrun, tooltipContent }) => {
-  const [anchorRect, setAnchorRect] = useState(null);
-  const rowRef = useRef(null);
-  const clampedPct = Math.min(100, Math.max(0, pct || 0));
-  const barColor = overrun ? 'var(--color-warning)' :
-    clampedPct === 100 ? 'var(--color-success)' : 'var(--color-sage)';
-
-  return (
-    <div
-      ref={rowRef}
-      onMouseEnter={() => rowRef.current && setAnchorRect(rowRef.current.getBoundingClientRect())}
-      onMouseLeave={() => setAnchorRect(null)}
-      style={{ display: 'flex', flexDirection: 'column', gap: 3 }}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-        <span style={{
-          fontSize: 10, fontWeight: 600, textTransform: 'uppercase',
-          letterSpacing: '0.07em', fontFamily: 'var(--font-display)', color: 'rgb(78,110,138)',
-        }}>{label}</span>
-        <span className="mono" style={{
-          fontSize: 10, fontWeight: 700,
-          color: overrun ? 'var(--color-warning)' : clampedPct === 100 ? 'var(--color-success)' : 'var(--color-navy)',
-        }}>{valueFmt}</span>
-      </div>
-      <div style={{ height: 5, background: 'var(--color-sage-20)', borderRadius: 99, overflow: 'hidden' }}>
-        <div style={{ height: '100%', width: `${clampedPct}%`, background: barColor, borderRadius: 99, transition: 'width 0.35s var(--ease-out)' }} />
-      </div>
-      {anchorRect && tooltipContent &&
-        <PortalTooltip anchorRect={anchorRect}>{tooltipContent}</PortalTooltip>
-      }
-    </div>
-  );
-};
 
 // ── Sidebar ────────────────────────────────────────────────────────
 const Sidebar = ({ collapsed, onToggle, projectName, onProjectNameChange }) => {
@@ -382,7 +191,7 @@ const Sidebar = ({ collapsed, onToggle, projectName, onProjectNameChange }) => {
 };
 
 // ── GanttChart ─────────────────────────────────────────────────────
-const GanttChart = ({ grupos, zoom, onItemClick, onAddItemToGroup, onToggleGroup, onRenameGroup, onDeleteGroup, onDragEnd, onAddGroup }) => {
+const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRenameGroup, onDeleteGroup, onDragEnd, onAddGroup }) => {
   const scrollRef = useRef(null);
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const [creatingGroup, setCreatingGroup] = useState(false);
@@ -395,14 +204,11 @@ const GanttChart = ({ grupos, zoom, onItemClick, onAddItemToGroup, onToggleGroup
     setCreatingGroup(false);
   };
 
-  const PX_DAY = zoom === 'days' ? 44 : zoom === 'weeks' ? 16 : 3.5;
-
-  // All items flattened for date range
+  // ── Date range ──
   const allItems = grupos.flatMap(g => g.items);
-
   let minDate = null, maxDate = null;
-  allItems.forEach((item) => {
-    item.versions.forEach((v) => v.etapas.forEach((e) => {
+  allItems.forEach(item => {
+    item.versions.forEach(v => v.etapas.forEach(e => {
       if (e.mes) {
         const s  = new Date(mesToStartISO(e.mes) + 'T00:00:00');
         const en = new Date(mesToEndISO(e.mes) + 'T00:00:00');
@@ -413,326 +219,377 @@ const GanttChart = ({ grupos, zoom, onItemClick, onAddItemToGroup, onToggleGroup
   });
   if (!minDate) { minDate = new Date(today); minDate.setMonth(minDate.getMonth() - 1); }
   if (!maxDate) { maxDate = new Date(today); maxDate.setMonth(maxDate.getMonth() + 4); }
-  const startDate  = new Date(minDate); startDate.setDate(startDate.getDate() - 14);
-  const endDate    = new Date(maxDate); endDate.setDate(endDate.getDate() + 28);
-  const totalWidth = Math.max(Math.ceil((endDate - startDate) / 86400000) * PX_DAY, 1000);
-  const todayX     = Math.floor((today - startDate) / 86400000) * PX_DAY;
 
-  const getX = (iso) => !iso ? 0 : Math.floor((new Date(iso + 'T00:00:00') - startDate) / 86400000) * PX_DAY;
-  const getW = (s, e) => !s || !e ? 4 : Math.max(4, Math.ceil((new Date(e + 'T00:00:00') - new Date(s + 'T00:00:00')) / 86400000) * PX_DAY);
+  const startDate = new Date(minDate.getFullYear(), minDate.getMonth() - 1, 1);
+  const endDate   = new Date(maxDate.getFullYear(), maxDate.getMonth() + 2, 1);
 
-  // Header columns
+  // ── Month columns ──
   const cols = [];
-  const cur = new Date(startDate);
-  if (zoom === 'months') {
-    cur.setDate(1);
-    while (cur <= endDate) {
-      cols.push({
-        label: cur.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }).replace('.', ''),
-        x: Math.floor((cur - startDate) / 86400000) * PX_DAY,
-        width: new Date(cur.getFullYear(), cur.getMonth() + 1, 0).getDate() * PX_DAY,
-      });
-      cur.setMonth(cur.getMonth() + 1);
-    }
-  } else if (zoom === 'weeks') {
-    const dow = cur.getDay();
-    cur.setDate(cur.getDate() - (dow === 0 ? 6 : dow - 1));
-    while (cur <= endDate) {
-      cols.push({
-        label: `${String(cur.getDate()).padStart(2, '0')} ${cur.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}`,
-        x: Math.max(0, Math.floor((cur - startDate) / 86400000) * PX_DAY),
-        width: 7 * PX_DAY,
-      });
-      cur.setDate(cur.getDate() + 7);
-    }
-  } else {
-    while (cur <= endDate) {
-      cols.push({
-        label: String(cur.getDate()),
-        sublabel: cur.getDate() === 1 ? cur.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '') : null,
-        x: Math.floor((cur - startDate) / 86400000) * PX_DAY,
-        width: PX_DAY,
-        isWeekend: cur.getDay() === 0 || cur.getDay() === 6,
-      });
-      cur.setDate(cur.getDate() + 1);
-    }
+  const cur  = new Date(startDate);
+  while (cur < endDate) {
+    const daysInMonth = new Date(cur.getFullYear(), cur.getMonth() + 1, 0).getDate();
+    cols.push({
+      label:  cur.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }).replace('.', ''),
+      mesKey: `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}`,
+      x:      Math.floor((cur - startDate) / 86400000) * PX_DAY,
+      width:  daysInMonth * PX_DAY,
+    });
+    cur.setMonth(cur.getMonth() + 1);
   }
+
+  const totalWidth   = cols.length > 0 ? cols[cols.length - 1].x + cols[cols.length - 1].width : 1000;
+  const todayX       = Math.floor((today - startDate) / 86400000) * PX_DAY;
+  const getX         = (iso) => !iso ? 0 : Math.floor((new Date(iso + 'T00:00:00') - startDate) / 86400000) * PX_DAY;
+  const getCol       = (mes) => cols.find(c => c.mesKey === mes);
+  const getMonthColW = (mes) => { const col = getCol(mes); return col ? col.width : 80; };
 
   useEffect(() => {
     if (scrollRef.current && todayX > 0) {
-      setTimeout(() => {
-        scrollRef.current.scrollLeft = Math.max(0, todayX - scrollRef.current.clientWidth / 3);
-      }, 120);
+      setTimeout(() => { scrollRef.current.scrollLeft = Math.max(0, todayX - 100); }, 120);
     }
-  }, [zoom]);
+  }, []);
 
-  // Flat render rows: group separator + items (hidden when collapsed)
-  const renderRows = grupos.flatMap(g => [
-    { type: 'group', grupo: g },
-    ...(g.collapsed ? [] : g.items.map(item => ({ type: 'item', item, grupoId: g.id }))),
-  ]);
+  // ── GanttItemBar — absolutely positioned within GanttItemCard ──
+  // itemOriginX: col.x of the item card's first month (right-panel coords)
+  const GanttItemBar = ({ etapa, itemOriginX }) => {
+    const col = getCol(etapa.mes);
+    if (!col) return null;
+    const totalBudget = (Number(etapa.orcamentoMaterial) || 0) + (Number(etapa.orcamentoMaoDeObra) || 0);
+    const totalGasto  = (Number(etapa.gastoMaterial) || 0) + (Number(etapa.gastoMaoDeObra) || 0);
+    const recebido    = Number(etapa.valorRecebido) || 0;
+    const overrun     = recebido > 0 && totalGasto > recebido;
+    let bg, textColor;
+    if (totalBudget === 0)           { bg = 'rgba(168,196,212,0.4)';  textColor = 'var(--color-navy-50)'; }
+    else if (etapa.feito && overrun) { bg = 'var(--color-warning)';   textColor = 'white'; }
+    else if (etapa.feito)            { bg = '#3D7E62';                textColor = 'white'; }
+    else                             { bg = 'rgba(107,163,192,0.75)'; textColor = 'white'; }
+    return (
+      <div style={{
+        position: 'absolute',
+        left: col.x - itemOriginX + 8, width: col.width - 16, height: 26,
+        top: '50%', transform: 'translateY(-50%)',
+        borderRadius: 8, padding: '0 8px', background: bg,
+        display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 2,
+        overflow: 'hidden', boxSizing: 'border-box',
+      }}>
+        {etapa.feito && (
+          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: overrun ? 'rgba(255,255,255,0.8)' : '#7dcca0', lineHeight: 1 }}>
+            etapa concluída
+          </span>
+        )}
+        <span style={{ fontSize: 12, fontWeight: 700, color: textColor, fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1 }}>
+          {totalBudget > 0 ? fmtBRL(totalBudget) : '—'}
+        </span>
+        {totalGasto > 0 && (
+          <span style={{ fontSize: 10, color: totalBudget === 0 ? 'var(--color-navy-50)' : 'rgba(255,255,255,0.75)', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>
+            gasto {fmtK(totalGasto)}
+          </span>
+        )}
+      </div>
+    );
+  };
+
+  // ── GanttGroupBar — absolutely positioned within GanttGroupCard header area ──
+  // groupOriginX: col.x of the group card's first month (right-panel coords)
+  const GanttGroupBar = ({ grupo, mes, groupOriginX }) => {
+    const col = getCol(mes);
+    if (!col) return null;
+    let monthBudget = 0, monthSpent = 0;
+    grupo.items.forEach(item => {
+      const latest = item.versions[item.versions.length - 1];
+      latest.etapas.filter(e => e.mes === mes).forEach(e => {
+        monthBudget += (Number(e.orcamentoMaterial) || 0) + (Number(e.orcamentoMaoDeObra) || 0);
+        monthSpent  += (Number(e.gastoMaterial) || 0) + (Number(e.gastoMaoDeObra) || 0);
+      });
+    });
+    return (
+      <div style={{
+        position: 'absolute',
+        left: col.x - groupOriginX + CARD_PAD + 8, width: col.width - 16, height: 26,
+        top: '50%', transform: 'translateY(-50%)',
+        borderRadius: 8, padding: '0 8px', background: 'rgba(107,163,192,0.85)',
+        display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 2,
+        overflow: 'hidden', boxSizing: 'border-box',
+      }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: 'white', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1 }}>
+          {monthBudget > 0 ? fmtBRL(monthBudget) : '—'}
+        </span>
+        {monthSpent > 0 && (
+          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.75)', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>
+            gasto {fmtK(monthSpent)}
+          </span>
+        )}
+      </div>
+    );
+  };
+
+  // ── GanttItemCard — white card for one item, vertically aligned with left column card ──
+  const GanttItemCard = ({ item, itemIndex, groupOriginX, onClick }) => {
+    const latest = item.versions[item.versions.length - 1];
+    const etapas = latest.etapas.filter(e => e.mes && getCol(e.mes));
+    if (!etapas.length) return null;
+    const sorted     = etapas.slice().sort((a, b) => a.mes < b.mes ? -1 : 1);
+    const firstCol   = getCol(sorted[0].mes);
+    const lastCol    = getCol(sorted[sorted.length - 1].mes);
+    const cardLeft   = firstCol.x - groupOriginX + CARD_PAD;           // 8px from group card left
+    const cardWidth  = lastCol.x + lastCol.width - firstCol.x;         // full column span
+    const cardTop    = GROUP_ROW_H - 3 + itemIndex * ITEM_ROW_H;       // matches left col 5px top padding
+    const cardHeight = ITEM_ROW_H - 10;                                 // matches left col 5+5px padding
+    return (
+      <div
+        onClick={onClick}
+        style={{
+          position: 'absolute',
+          left: cardLeft, top: cardTop, width: cardWidth, height: cardHeight,
+          background: 'white', borderRadius: 14,
+          border: '1px solid rgba(66,140,185,0.2)',
+          boxShadow: '0 1px 4px rgba(13,27,38,0.06)',
+          cursor: 'pointer', transition: 'box-shadow 0.15s',
+          pointerEvents: 'auto', overflow: 'hidden',
+        }}
+        onMouseEnter={e => e.currentTarget.style.boxShadow = '0 3px 10px rgba(13,27,38,0.12)'}
+        onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 4px rgba(13,27,38,0.06)'}
+      >
+        {sorted.map(etapa => (
+          <GanttItemBar key={etapa.id || etapa.mes} etapa={etapa} itemOriginX={firstCol.x} />
+        ))}
+      </div>
+    );
+  };
+
+  // ── GanttGroupCard — outer rounded card spanning full group height ──
+  const GanttGroupCard = ({ grupo }) => {
+    const allMonths = new Set();
+    grupo.items.forEach(item => {
+      const latest = item.versions[item.versions.length - 1];
+      latest.etapas.forEach(e => { if (e.mes && getCol(e.mes)) allMonths.add(e.mes); });
+    });
+    const sortedMonths = Array.from(allMonths).sort();
+    if (!sortedMonths.length) return null;
+
+    const firstCol     = getCol(sortedMonths[0]);
+    const lastCol      = getCol(sortedMonths[sortedMonths.length - 1]);
+    const groupOriginX = firstCol.x;
+    const cardLeft     = LEFT_COL_W + groupOriginX - CARD_PAD;                         // 8px before first col
+    const cardWidth    = lastCol.x + lastCol.width - groupOriginX + CARD_PAD * 2;      // +8px each side
+    const totalRows    = GROUP_ROW_H + (grupo.collapsed ? 0 : grupo.items.length * ITEM_ROW_H) + GROUP_FOOTER_ROW_H;
+
+    return (
+      <div style={{
+        position: 'absolute', top: 8, left: cardLeft,
+        width: cardWidth, height: totalRows - 16,     // 8px top + 8px bottom
+        background: 'rgba(66,140,185,0.04)',
+        borderRadius: 18,
+        border: '1px solid rgba(66,140,185,0.18)',
+        boxShadow: '0 1px 6px rgba(13,27,38,0.05)',
+        pointerEvents: 'none', overflow: 'visible',
+      }}>
+        {/* Group bars — centered in header area */}
+        <div style={{ position: 'relative', height: GROUP_ROW_H - 8 }}>
+          {sortedMonths.map(mes => (
+            <GanttGroupBar key={mes} grupo={grupo} mes={mes} groupOriginX={groupOriginX} />
+          ))}
+        </div>
+
+        {/* Item cards */}
+        {!grupo.collapsed && grupo.items.map((item, iIdx) => (
+          <GanttItemCard
+            key={item.id}
+            item={item}
+            itemIndex={iIdx}
+            groupOriginX={groupOriginX}
+            onClick={onItemClick ? () => onItemClick(item, grupo.id) : undefined}
+          />
+        ))}
+      </div>
+    );
+  };
+
+  // ── Right cell: gridlines + today + row separator + children ──
+  const RowRight = ({ children, bg }) => (
+    <div style={{ flex: 1, position: 'relative', background: bg || 'transparent', minWidth: 0, borderBottom: '1px solid var(--color-gray-200)' }}>
+      {cols.map((col, i) => (
+        <div key={i} style={{ position: 'absolute', left: col.x + col.width - 1, top: 0, bottom: 0, width: 1, background: 'var(--color-gray-200)', opacity: 0.5 }} />
+      ))}
+      {todayX > 0 && (
+        <div style={{ position: 'absolute', left: todayX, top: 0, bottom: 0, width: 1.5, background: 'var(--color-blue)', opacity: 0.3, zIndex: 1 }} />
+      )}
+      {children}
+    </div>
+  );
 
   return (
-    <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+    <div ref={scrollRef} style={{ flex: 1, overflowX: 'auto', overflowY: 'auto', position: 'relative' }}>
+      <div style={{ minWidth: LEFT_COL_W + totalWidth, display: 'flex', flexDirection: 'column' }}>
 
-      {/* ── Left column ─────────────────────────────── */}
-      <div style={{
-        width: LEFT_COL_W, flexShrink: 0,
-        borderRight: '1px solid var(--color-gray-200)',
-        display: 'flex', flexDirection: 'column',
-        background: 'var(--color-white)', zIndex: 3,
-      }}>
-        {/* Sticky header */}
-        <div style={{
-          height: HEADER_H, borderBottom: '1px solid var(--color-gray-200)',
-          display: 'flex', alignItems: 'center', padding: '0 16px', flexShrink: 0,
-          position: 'sticky', top: 0, background: 'var(--color-white)', zIndex: 1,
-        }}>
-          <span style={{
-            fontSize: 10, color: 'var(--color-gray-400)', fontWeight: 600,
-            textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: 'var(--font-display)',
-          }}>
-            Grupo de Itens
-          </span>
-        </div>
-
-        {/* Scrollable groups area */}
-        <div style={{ flex: 1, overflowY: 'auto' }}>
-          <DragDropContext onDragEnd={onDragEnd}>
-            <Droppable droppableId="groups-list" type="GROUP">
-              {(provided) => (
-                <div
-                  ref={provided.innerRef}
-                  {...provided.droppableProps}
-                  style={{ padding: '8px 8px 4px', display: 'flex', flexDirection: 'column', gap: 8 }}
-                >
-                  {grupos.map((grupo, gIdx) => (
-                    <Draggable key={grupo.id} draggableId={grupo.id} index={gIdx}>
-                      {(provided, snapshot) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          style={{
-                            opacity: snapshot.isDragging ? 0.9 : 1,
-                            ...provided.draggableProps.style,
-                          }}
-                        >
-                          <GrupoItensCronograma
-                            grupo={grupo}
-                            dragHandleProps={provided.dragHandleProps}
-                            onToggle={() => onToggleGroup(grupo.id)}
-                            onItemClick={(item) => onItemClick(item, grupo.id)}
-                            onAddItemToGroup={() => onAddItemToGroup(grupo.id)}
-                            onRenameGroup={(name) => onRenameGroup(grupo.id, name)}
-                            onDeleteGroup={() => onDeleteGroup(grupo.id)}
-                          />
-                        </div>
-                      )}
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
-          </DragDropContext>
-
-          {/* Add group section */}
-          <div style={{ padding: '4px 8px 14px' }}>
-            {creatingGroup ? (
-              <div style={{ display: 'flex', gap: 6 }}>
-                <input
-                  autoFocus
-                  value={newGroupName}
-                  onChange={e => setNewGroupName(e.target.value)}
-                  placeholder="Nome do grupo…"
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') handleConfirmAddGroup();
-                    if (e.key === 'Escape') { setNewGroupName(''); setCreatingGroup(false); }
-                  }}
-                  style={{ flex: 1, fontSize: 13 }}
-                />
-                <button className="btn btn-primary btn-sm" onClick={handleConfirmAddGroup}>Criar</button>
-                <button
-                  className="btn btn-ghost btn-sm"
-                  onClick={() => { setNewGroupName(''); setCreatingGroup(false); }}
-                >✕</button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setCreatingGroup(true)}
-                className="btn btn-ghost"
-                style={{ width: '100%', justifyContent: 'center', backgroundColor: 'rgb(226,239,246)', color: 'rgb(45,78,112)', fontSize: 14 }}
-              >
-                + Adicionar um grupo de itens
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* ── Timeline ────────────────────────────────── */}
-      <div ref={scrollRef} style={{ flex: 1, overflowX: 'auto', overflowY: 'hidden', position: 'relative' }}>
-        <div style={{ width: totalWidth, minHeight: '100%', position: 'relative', display: 'flex', flexDirection: 'column' }}>
-
-          {/* Header */}
+        {/* ── Sticky month header ── */}
+        <div style={{ position: 'sticky', top: 0, zIndex: 5, display: 'flex', height: HEADER_H, flexShrink: 0 }}>
           <div style={{
-            height: HEADER_H, position: 'sticky', top: 0, zIndex: 2,
-            background: 'var(--color-gray-100)', borderBottom: '1px solid var(--color-gray-200)',
-            overflow: 'hidden',
+            width: LEFT_COL_W, flexShrink: 0, position: 'sticky', left: 0, zIndex: 6,
+            background: 'var(--color-white)',
+            borderRight: '1px solid var(--color-gray-200)',
+            borderBottom: '1px solid var(--color-gray-200)',
+            display: 'flex', alignItems: 'center', padding: '0 16px',
           }}>
-            {cols.map((col, i) =>
+            <span style={{ fontSize: 10, color: 'var(--color-gray-400)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: 'var(--font-display)' }}>
+              Obra
+            </span>
+          </div>
+          <div style={{ flex: 1, position: 'relative', background: 'var(--color-gray-100)', borderBottom: '1px solid var(--color-gray-200)' }}>
+            {cols.map((col, i) => (
               <div key={i} style={{
                 position: 'absolute', left: col.x, width: col.width, top: 0, bottom: 0,
                 borderRight: '1px solid var(--color-gray-200)',
-                background: col.isWeekend ? 'rgba(27,60,95,0.02)' : 'transparent',
-                display: 'flex', flexDirection: 'column', justifyContent: 'center',
-                padding: '0 6px', overflow: 'hidden',
+                display: 'flex', alignItems: 'center', padding: '0 6px',
               }}>
-                {col.sublabel &&
-                  <div style={{ fontSize: 9, color: 'var(--color-gray-400)', fontFamily: 'var(--font-mono)', lineHeight: 1, marginBottom: 1 }}>
-                    {col.sublabel}
-                  </div>
-                }
-                <div style={{
-                  fontSize: zoom === 'months' ? 11 : 10,
-                  color: 'var(--color-gray-400)', fontFamily: 'var(--font-mono)',
-                  whiteSpace: 'nowrap', overflow: 'hidden',
-                  fontWeight: zoom === 'months' ? 600 : 400,
-                }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-gray-400)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
                   {col.label}
-                </div>
+                </span>
               </div>
-            )}
-            {todayX > 0 &&
+            ))}
+            {todayX > 0 && (
               <div style={{ position: 'absolute', left: todayX, top: 0, width: 1.5, height: HEADER_H, background: 'var(--color-blue)', opacity: 0.5 }} />
-            }
-          </div>
-
-          {/* Row bodies */}
-          <div style={{ flex: 1 }}>
-            {renderRows.map((row, rowIdx) => {
-              // ── Group separator row ──
-              if (row.type === 'group') {
-                const g = row.grupo;
-                return (
-                  <div key={`grp-${g.id}`} style={{
-                    position: 'relative', height: GROUP_SEP_H,
-                    borderBottom: '1px solid var(--color-gray-200)',
-                    background: 'var(--color-gray-100)',
-                    borderLeft: '3px solid var(--color-sage)',
-                    display: 'flex', alignItems: 'center',
-                  }}>
-                    {/* Grid lines */}
-                    {cols.map((col, i) =>
-                      <div key={i} style={{ position: 'absolute', left: col.x + col.width, top: 0, bottom: 0, width: 1, background: 'var(--color-gray-200)', opacity: 0.5 }} />
-                    )}
-                    {todayX > 0 &&
-                      <div style={{ position: 'absolute', left: todayX, top: 0, bottom: 0, width: 1.5, background: 'var(--color-blue)', opacity: 0.3, zIndex: 1 }} />
-                    }
-                    <span style={{
-                      position: 'relative', zIndex: 2,
-                      padding: '0 14px',
-                      fontSize: 11, fontWeight: 700,
-                      color: 'var(--color-gray-500)',
-                      fontFamily: 'var(--font-display)',
-                      textTransform: 'uppercase', letterSpacing: '0.07em',
-                      whiteSpace: 'nowrap',
-                    }}>
-                      {g.nome}
-                      {g.collapsed && (
-                        <span style={{ fontWeight: 400, marginLeft: 6 }}>
-                          · {g.items.length} {g.items.length === 1 ? 'item' : 'itens'}
-                        </span>
-                      )}
-                    </span>
-                  </div>
-                );
-              }
-
-              // ── Item row ──
-              const item  = row.item;
-              const ROW_H = rowHeight(item.versions.length);
-              const latest = item.versions[item.versions.length - 1];
-
-              return (
-                <div key={`item-${item.id}`} style={{ position: 'relative', height: ROW_H, borderBottom: '1px solid var(--color-gray-200)' }}>
-                  {/* Grid lines */}
-                  {cols.map((col, i) =>
-                    <div key={i} style={{ position: 'absolute', left: col.x + col.width, top: 0, bottom: 0, width: 1, background: 'var(--color-gray-200)', opacity: 0.5 }} />
-                  )}
-                  {zoom === 'days' && cols.filter(c => c.isWeekend).map((col, i) =>
-                    <div key={i} style={{ position: 'absolute', left: col.x, width: col.width, top: 0, bottom: 0, background: 'rgba(27,60,95,0.025)' }} />
-                  )}
-                  {todayX > 0 &&
-                    <div style={{ position: 'absolute', left: todayX, top: 0, bottom: 0, width: 1.5, background: 'var(--color-blue)', opacity: 0.3, zIndex: 1 }} />
-                  }
-
-                  {/* Version bars */}
-                  {item.versions.map((v, vIdx) => {
-                    const isLatest = vIdx === item.versions.length - 1;
-                    const range    = getVersionRange(v);
-                    if (!range) return null;
-                    const bx = getX(range.start);
-                    const bw = getW(range.start, range.end) + PX_DAY - 3;
-                    const by = barY(vIdx, item.versions.length, ROW_H);
-                    const bh = isLatest ? MAIN_BAR_H : PREV_BAR_H;
-
-                    return (
-                      <React.Fragment key={v.number}>
-                        {/* Label left of bar */}
-                        <div style={{
-                          position: 'absolute', top: by, left: bx,
-                          transform: 'translateX(calc(-100% - 10px))',
-                          height: bh, display: 'flex', alignItems: 'center',
-                          pointerEvents: 'none', whiteSpace: 'nowrap',
-                        }}>
-                          <span style={{ fontSize: isLatest ? 13 : 11, fontWeight: isLatest ? 700 : 500, color: isLatest ? 'rgb(27,60,95)' : 'var(--color-gray-400)', fontFamily: 'var(--font-display)' }}>
-                            {isLatest && latest?.nome
-                              ? <>{latest.nome} · <span className="mono" style={{ fontWeight: 600, fontSize: 12 }}>v{v.number}</span></>
-                              : <span className="mono">v{v.number}</span>
-                            }
-                          </span>
-                        </div>
-
-                        {isLatest ? (() => {
-                          const dated = v.etapas.filter(e => e.mes);
-                          return dated.map((etapa, eIdx) => {
-                            const s  = mesToStartISO(etapa.mes);
-                            const e2 = mesToEndISO(etapa.mes);
-                            const ex = getX(s);
-                            const ew = Math.max(4, getW(s, e2) + PX_DAY - 3);
-                            const next = dated[eIdx + 1];
-                            const OVERLAP = 5;
-                            const connectorX = ex + ew - OVERLAP;
-                            const nextEx = next ? getX(mesToStartISO(next.mes)) : 0;
-                            const connectorW = next ? Math.max(0, nextEx + OVERLAP - connectorX) : 0;
-                            return (
-                              <React.Fragment key={eIdx}>
-                                {connectorW > 0 &&
-                                  <div style={{ position: 'absolute', left: connectorX, top: by, width: connectorW, height: bh, background: 'rgba(212,228,224,0.5)', borderRadius: 2, zIndex: 2, pointerEvents: 'none' }} />
-                                }
-                                <StepBar etapa={etapa} eIdx={eIdx} ex={ex} ew={ew} by={by} bh={bh} onItemClick={() => onItemClick(item, row.grupoId)} />
-                              </React.Fragment>
-                            );
-                          });
-                        })() : (
-                          <div
-                            onClick={() => onItemClick(item, row.grupoId)}
-                            title={`v${v.number} · ${fmtDatePT(range.start)} → ${fmtDatePT(range.end)}`}
-                            style={{ position: 'absolute', left: bx, top: by, width: bw, height: bh, background: '#D1D9E1', borderRadius: 3, zIndex: 2, cursor: 'pointer', transition: 'opacity 0.15s', boxShadow: 'var(--shadow-sm)' }}
-                            onMouseEnter={e => e.currentTarget.style.opacity = '0.7'}
-                            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-                          />
-                        )}
-                      </React.Fragment>
-                    );
-                  })}
-                </div>
-              );
-            })}
-            <div style={{ height: 56 }} />
+            )}
           </div>
         </div>
+
+        {/* ── Flat rows with drag-drop ── */}
+        <DragDropContext onDragEnd={onDragEnd}>
+          <Droppable droppableId="groups-list" type="GROUP">
+            {(provided) => (
+              <div ref={provided.innerRef} {...provided.droppableProps}>
+                {grupos.map((grupo, gIdx) => (
+                  <Draggable key={grupo.id} draggableId={grupo.id} index={gIdx}>
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        style={{ opacity: snapshot.isDragging ? 0.9 : 1, ...provided.draggableProps.style, position: 'relative', overflow: 'visible' }}
+                      >
+                        {/* Group header row */}
+                        <div style={{ display: 'flex', height: GROUP_ROW_H }}>
+                          <div style={{
+                            width: LEFT_COL_W, flexShrink: 0, position: 'sticky', left: 0, zIndex: 3,
+                            background: 'var(--color-gray-100)',
+                            padding: '8px 8px 0 8px',
+                          }}>
+                            <GrupoHeader
+                              grupo={grupo}
+                              dragHandleProps={provided.dragHandleProps}
+                              onToggle={() => onToggleGroup(grupo.id)}
+                              onRenameGroup={(name) => onRenameGroup(grupo.id, name)}
+                            />
+                          </div>
+                          <RowRight bg="var(--color-gray-100)" />
+                        </div>
+
+                        {/* Item rows */}
+                        {!grupo.collapsed && (
+                          <Droppable droppableId={grupo.id} type="ITEM">
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.droppableProps}
+                                style={{ background: snapshot.isDraggingOver ? 'rgba(107,163,192,0.04)' : 'transparent' }}
+                              >
+                                {grupo.items.map((item, iIdx) => (
+                                  <Draggable key={item.id} draggableId={item.id} index={iIdx}>
+                                    {(provided, snapshot) => (
+                                      <div
+                                        ref={provided.innerRef}
+                                        {...provided.draggableProps}
+                                        style={{ opacity: snapshot.isDragging ? 0.88 : 1, ...provided.draggableProps.style }}
+                                      >
+                                        <div style={{ display: 'flex', height: ITEM_ROW_H }}>
+                                          <div style={{
+                                            width: LEFT_COL_W, flexShrink: 0, position: 'sticky', left: 0, zIndex: 3,
+                                            background: 'var(--color-gray-100)',
+                                            padding: '0 8px',
+                                          }}>
+                                            <div style={{
+                                              background: 'var(--color-navy-10)',
+                                              borderLeft: '1px solid rgba(115,169,199,0.35)',
+                                              borderRight: '1px solid rgba(115,169,199,0.35)',
+                                              height: '100%', boxSizing: 'border-box',
+                                              padding: '5px 8px',
+                                            }}>
+                                            <ItemCronograma
+                                              item={item}
+                                              dragHandleProps={provided.dragHandleProps}
+                                              onClick={() => onItemClick(item, grupo.id)}
+                                            />
+                                            </div>
+                                          </div>
+                                          <RowRight />
+                                        </div>
+                                      </div>
+                                    )}
+                                  </Draggable>
+                                ))}
+                                {provided.placeholder}
+                              </div>
+                            )}
+                          </Droppable>
+                        )}
+
+                        {/* Group footer row — add item + delete */}
+                        <div style={{ display: 'flex', height: GROUP_FOOTER_ROW_H }}>
+                          <div style={{
+                            width: LEFT_COL_W, flexShrink: 0, position: 'sticky', left: 0, zIndex: 3,
+                            background: 'var(--color-gray-100)',
+                            padding: '0 8px 8px 8px',
+                          }}>
+                            <GroupFooter
+                              grupo={grupo}
+                              onAddItemToGroup={() => onAddItemToGroup(grupo.id)}
+                              onDeleteGroup={() => onDeleteGroup(grupo.id)}
+                            />
+                          </div>
+                          <RowRight bg="var(--color-gray-100)" />
+                        </div>
+
+                        {/* GanttGroupCard rendered last so it paints above all RowRight backgrounds */}
+                        <GanttGroupCard grupo={grupo} />
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
+
+        {/* Add group */}
+        <div style={{ padding: '12px 8px', width: LEFT_COL_W }}>
+          {creatingGroup ? (
+            <div style={{ display: 'flex', gap: 6 }}>
+              <input
+                autoFocus
+                value={newGroupName}
+                onChange={e => setNewGroupName(e.target.value)}
+                placeholder="Nome do grupo…"
+                onKeyDown={e => {
+                  if (e.key === 'Enter') handleConfirmAddGroup();
+                  if (e.key === 'Escape') { setNewGroupName(''); setCreatingGroup(false); }
+                }}
+                style={{ flex: 1, fontSize: 13 }}
+              />
+              <button className="btn btn-primary btn-sm" onClick={handleConfirmAddGroup}>Criar</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => { setNewGroupName(''); setCreatingGroup(false); }}>✕</button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setCreatingGroup(true)}
+              className="btn btn-ghost"
+              style={{ width: '100%', justifyContent: 'center', backgroundColor: 'rgb(226,239,246)', color: 'rgb(45,78,112)', fontSize: 14 }}
+            >
+              + Adicionar um grupo de itens
+            </button>
+          )}
+        </div>
+
+        <div style={{ height: 56 }} />
       </div>
     </div>
   );
@@ -757,6 +614,7 @@ const DEFAULT_ITEMS = [
           feito: false,
           gastoMaterial: '',
           gastoMaoDeObra: '',
+          valorRecebido: '',
         },
         {
           id: 'e-default-2',
@@ -768,6 +626,7 @@ const DEFAULT_ITEMS = [
           feito: false,
           gastoMaterial: '',
           gastoMaoDeObra: '',
+          valorRecebido: '',
         },
       ],
     }],
@@ -790,7 +649,6 @@ const App = () => {
   const [editingItem, setEditingItem]     = useState(null);
   const [editingContext, setEditingContext] = useState(null); // { grupoId }
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [zoom, setZoom]                   = useState('weeks');
   const [projectName, setProjectName]     = useState('Projeto');
 
   const handleOpenItem = (item, grupoId) => {
@@ -852,6 +710,13 @@ const App = () => {
     }
   };
 
+  const handleDeleteItem = () => {
+    if (!editingItem) return;
+    setGrupos(prev => prev.map(g => ({ ...g, items: g.items.filter(it => it.id !== editingItem.id) })));
+    setModalOpen(false);
+    setEditingItem(null);
+  };
+
   const handleSave = ({ nome, etapas, needsNewVersion }) => {
     setGrupos(prev => {
       if (!editingItem) {
@@ -880,9 +745,6 @@ const App = () => {
     setModalOpen(false);
   };
 
-  const zoomLabels = { days: 'Dias', weeks: 'Semanas', months: 'Meses' };
-  const hasMultipleVersions = grupos.some(g => g.items.some(it => it.versions.length > 1));
-
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--color-gray-100)' }}>
       <Sidebar
@@ -906,48 +768,12 @@ const App = () => {
           }}>
             Cronograma
           </span>
-
-          {/* Version legend */}
-          {hasMultipleVersions &&
-            <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginRight: 8, width: 220 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                <div style={{ width: 22, height: 16, borderRadius: 3, backgroundColor: 'rgb(209,217,225)' }} />
-                <span style={{ fontSize: 10, color: 'var(--color-gray-600)', fontFamily: 'var(--font-display)' }}>versões anteriores</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                <div style={{ width: 22, height: 16, backgroundColor: 'var(--color-sage)', borderRadius: 3 }} />
-                <span style={{ fontSize: 10, color: 'var(--color-gray-600)', fontFamily: 'var(--font-display)' }}>versão atual</span>
-              </div>
-            </div>
-          }
-
-          {/* Zoom controls */}
-          <div style={{
-            display: 'flex', gap: 2, background: 'var(--color-gray-100)',
-            borderRadius: 'var(--radius-md)', padding: 3,
-            border: '1px solid var(--color-gray-200)',
-          }}>
-            {['days', 'weeks', 'months'].map(z =>
-              <button key={z} onClick={() => setZoom(z)} style={{
-                padding: '4px 12px', borderRadius: 'var(--radius-sm)', border: 'none',
-                fontFamily: 'var(--font-body)', fontSize: 12, cursor: 'pointer',
-                background: zoom === z ? 'var(--color-white)' : 'transparent',
-                color: zoom === z ? 'var(--color-navy)' : 'var(--color-gray-600)',
-                fontWeight: zoom === z ? 600 : 400,
-                transition: 'all 0.15s',
-                boxShadow: zoom === z ? 'var(--shadow-sm)' : 'none',
-              }}>
-                {zoomLabels[z]}
-              </button>
-            )}
-          </div>
         </div>
 
         {/* Gantt */}
         <div style={{ flex: 1, overflow: 'hidden', display: 'flex' }}>
           <GanttChart
             grupos={grupos}
-            zoom={zoom}
             onItemClick={handleOpenItem}
             onAddItemToGroup={handleAddItemToGroup}
             onToggleGroup={handleToggleGroup}
@@ -959,12 +785,10 @@ const App = () => {
         </div>
       </div>
 
-      <ItemModal
-        item={editingItem}
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSave={handleSave}
-      />
+      {editingItem
+        ? <ItemModal item={editingItem} isOpen={modalOpen} onClose={() => setModalOpen(false)} onSave={handleSave} onDelete={handleDeleteItem} />
+        : <NovoItemDrawer isOpen={modalOpen} onClose={() => setModalOpen(false)} onSave={handleSave} />
+      }
     </div>
   );
 };

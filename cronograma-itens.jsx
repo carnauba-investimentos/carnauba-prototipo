@@ -125,7 +125,11 @@ const getGroupSpent = (grupo) =>
     return s + getTotalSpent(latest);
   }, 0);
 
-const getGroupRecebido = (_grupo) => 0;
+const getGroupRecebido = (grupo) =>
+  grupo.items.reduce((s, item) => {
+    const latest = item.versions[item.versions.length - 1];
+    return s + latest.etapas.reduce((sum, e) => sum + (Number(e.valorRecebido) || 0), 0);
+  }, 0);
 
 // Returns true if the version has any etapa that is past its month end and not completed.
 // Mirrors the `monthOver` logic in app.jsx's GanttBar component.
@@ -216,6 +220,156 @@ const ItemCronograma = ({ item, dragHandleProps, onClick }) => {
           textColor={gastOverrun ? 'var(--color-warning)' : 'var(--color-success)'}
         />
       </div>
+    </div>
+  );
+};
+
+// ── GrupoHeader — group header for the Gantt left column ─────────────
+// Mirrors the GrupoItensCronograma header: name + bars. No add/delete here.
+const GrupoHeader = ({ grupo, dragHandleProps, onToggle, onRenameGroup }) => {
+  const [editingName, setEditingName] = useStateCi(false);
+  const [nameValue,   setNameValue]   = useStateCi(grupo.nome);
+  const inputRef = useRefCi(null);
+
+  useEffectCi(() => { setNameValue(grupo.nome); }, [grupo.nome]);
+  useEffectCi(() => { if (editingName && inputRef.current) inputRef.current.focus(); }, [editingName]);
+
+  const commitRename = () => {
+    setEditingName(false);
+    const trimmed = nameValue.trim();
+    if (trimmed && trimmed !== grupo.nome) onRenameGroup(trimmed);
+    else setNameValue(grupo.nome);
+  };
+
+  const progPct     = getGroupProgress(grupo);
+  const budget      = getGroupBudget(grupo);
+  const spent       = getGroupSpent(grupo);
+  const recebido    = getGroupRecebido(grupo);
+  const gastPct     = budget === 0 ? 0 : Math.round((spent    / budget) * 100);
+  const recebidoPct = budget === 0 ? 0 : Math.round((recebido / budget) * 100);
+  const gastOverrun = spent > budget && budget > 0;
+  const isOverdue   = getGroupHasOverdue(grupo);
+
+  return (
+    <div
+      {...dragHandleProps}
+      style={{
+        padding: '10px 10px 10px 14px',
+        background: 'var(--color-navy-10)',
+        height: '100%', boxSizing: 'border-box',
+        cursor: 'grab', userSelect: 'none',
+        borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0',
+        border: '1px solid rgba(115,169,199,0.35)',
+        borderBottom: 'none',
+      }}
+    >
+      {/* Row: chevron + name + progress */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+        <button
+          onClick={e => { e.stopPropagation(); onToggle(); }}
+          style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-navy)', padding: 2, display: 'flex', flexShrink: 0, borderRadius: 4, transition: 'opacity 0.12s', opacity: 0.5 }}
+          onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+          onMouseLeave={e => e.currentTarget.style.opacity = '0.5'}
+        >
+          {grupo.collapsed ? <IconChevronRightSm /> : <IconChevronDown />}
+        </button>
+
+        {editingName ? (
+          <input
+            ref={inputRef}
+            value={nameValue}
+            onChange={e => setNameValue(e.target.value)}
+            onBlur={commitRename}
+            onKeyDown={e => {
+              if (e.key === 'Enter') inputRef.current.blur();
+              if (e.key === 'Escape') { setNameValue(grupo.nome); setEditingName(false); }
+            }}
+            onClick={e => e.stopPropagation()}
+            style={{ flex: 1, fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-display)', padding: '1px 4px' }}
+          />
+        ) : (
+          <span
+            onDoubleClick={() => setEditingName(true)}
+            title="Clique duplo para renomear"
+            style={{ flex: 1, fontWeight: 700, color: 'var(--color-navy)', fontFamily: 'var(--font-display)', fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'text' }}
+          >{grupo.nome}</span>
+        )}
+
+        <ProgressPie pct={progPct} overdue={isOverdue} />
+      </div>
+
+      {/* Consolidated bars */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+        <GroupBarRow
+          label="Solicitado" pct={100}
+          absValue={budget ? fmtBRL(budget) : '—'}
+          barColor="var(--color-navy-50)" trackColor="var(--color-navy-20)" textColor="var(--color-navy-50)"
+        />
+        <GroupBarRow
+          label="Recebido" pct={recebidoPct}
+          absValue={fmtBRL(recebido)}
+          barColor="var(--color-blue)" trackColor="var(--color-blue-20)" textColor="var(--color-blue)"
+        />
+        <GroupBarRow
+          label="Gasto" pct={gastPct}
+          absValue={budget ? fmtBRL(spent) : '—'}
+          barColor={gastOverrun ? 'var(--color-warning)' : 'var(--color-success)'}
+          trackColor="var(--color-sage-20)"
+          textColor={gastOverrun ? 'var(--color-warning)' : 'var(--color-success)'}
+        />
+      </div>
+    </div>
+  );
+};
+
+// ── GroupFooter — add-item + delete controls at the bottom of a group ─
+const GroupFooter = ({ grupo, onAddItemToGroup, onDeleteGroup }) => {
+  const [confirmDelete, setConfirmDelete] = useStateCi(false);
+
+  return (
+    <div style={{
+      padding: '4px 8px',
+      background: 'var(--color-navy-10)',
+      height: '100%', boxSizing: 'border-box',
+      borderRadius: '0 0 var(--radius-lg) var(--radius-lg)',
+      border: '1px solid rgba(115,169,199,0.35)',
+      borderTop: 'none',
+    }}>
+      {confirmDelete ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 4px' }}>
+          <span style={{ flex: 1, fontSize: 11, color: 'var(--color-navy)', fontFamily: 'var(--font-body)', lineHeight: 1.4 }}>
+            Excluir grupo{grupo.items.length > 0 ? ` e ${grupo.items.length} ${grupo.items.length === 1 ? 'item' : 'itens'}` : ''}?
+          </span>
+          <button
+            onClick={e => { e.stopPropagation(); setConfirmDelete(false); }}
+            style={{ background: 'transparent', border: '1px solid rgba(27,60,95,0.25)', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: 11, color: 'var(--color-navy)', padding: '3px 8px', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap' }}
+          >Cancelar</button>
+          <button
+            onClick={e => { e.stopPropagation(); onDeleteGroup(); }}
+            style={{ background: 'var(--color-error)', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: 11, color: 'white', padding: '3px 8px', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap' }}
+          >Excluir</button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <button
+            onClick={e => { e.stopPropagation(); onAddItemToGroup(); }}
+            style={{ flex: 1, background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 12, color: 'var(--color-navy)', padding: '5px 4px', borderRadius: 'var(--radius-sm)', textAlign: 'left', fontFamily: 'var(--font-body)', transition: 'opacity 0.12s', opacity: 0.55 }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '0.55'}
+          >
+            + Adicionar um item
+          </button>
+          <button
+            onClick={e => { e.stopPropagation(); setConfirmDelete(true); }}
+            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-navy)', padding: '5px 6px', display: 'flex', borderRadius: 'var(--radius-sm)', transition: 'color 0.12s, opacity 0.12s', opacity: 0.4 }}
+            title="Excluir grupo"
+            onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-error)'; e.currentTarget.style.opacity = '1'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-navy)'; e.currentTarget.style.opacity = '0.4'; }}
+          >
+            <IconTrash />
+          </button>
+        </div>
+      )}
     </div>
   );
 };
@@ -458,4 +612,4 @@ const GrupoItensCronograma = ({ grupo, dragHandleProps, onToggle, onItemClick, o
   );
 };
 
-Object.assign(window, { GrupoItensCronograma, ItemCronograma, DragDropContext, Droppable, Draggable });
+Object.assign(window, { GrupoHeader, GroupFooter, GrupoItensCronograma, ItemCronograma, DragDropContext, Droppable, Draggable });
