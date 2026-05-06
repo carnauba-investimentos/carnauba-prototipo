@@ -250,27 +250,28 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
   }, []);
 
   // ── Color theme helpers ───────────────────────────────────────────
-  const itemBarColors = ({ noBudget, done, overSpent }) => {
-    const w = 'var(--color-warning)', s = '#3D7E62', white = 'rgba(255,255,255,0.85)';
-    if (noBudget)          return { barBackground: 'rgba(168,196,212,0.35)', barSpentFill: 'rgba(107,163,192,0.2)',  barBudgetFont: 'var(--color-navy-50)', barSpentFont: 'var(--color-navy-50)', barOutline: 'transparent',             messageFontWarn: w, messageFontDone: s };
-  //if (done && overSpent) return { barBackground: 'rgba(192,138,42,0.15)',  barSpentFill: w,                        barBudgetFont: w,                      barSpentFont: w,                      barOutline: 'rgba(192,138,42,0.3)',     messageFontWarn: w, messageFontDone: s };
-    if (overSpent)         return { barBackground: 'rgba(192,138,42,0.15)',  barSpentFill: w,                        barBudgetFont: white,                  barSpentFont: w,                      barOutline: 'rgba(192,138,42,0.3)',     messageFontWarn: w, messageFontDone: s };
-    if (done)              return { barBackground: 'rgba(61,126,98,0.12)',   barSpentFill: s,                        barBudgetFont: s,                      barSpentFont: s,                      barOutline: 'rgba(61,126,98,0.25)',     messageFontWarn: w, messageFontDone: s };
-    return                        { barBackground: 'rgba(107,163,192,0.15)', barSpentFill: 'rgba(107,163,192,0.85)', barBudgetFont: 'var(--color-navy-70)', barSpentFont: 'var(--color-navy-50)', barOutline: 'rgba(107,163,192,0.3)',    messageFontWarn: w, messageFontDone: s };
+  const itemBarColors = ({ notReceived, done, overSpent }) => {
+    const w = 'var(--color-warning)', s = '#3D7E62', white = 'rgba(255,255,255,0.85)';    
+    if (notReceived && done) return { barBackground: s,                          barSpentFill: 'rgba(107,163,192,0.2)',  barBudgetFont: white,                   barSpentFont: 'var(--color-navy-50)', barOutline: 'transparent',              messageFontWarn: w, messageFontDone: s };    
+    if (notReceived)         return { barBackground: 'rgba(168,196,212,0.35)', barSpentFill: 'rgba(107,163,192,0.2)',  barBudgetFont: 'var(--color-gray-400)', barSpentFont: 'var(--color-navy-50)', barOutline: 'transparent',              messageFontWarn: w, messageFontDone: s };
+    if (done && overSpent)   return { barBackground: 'rgba(61,126,98,0.12)',   barSpentFill: s,                          barBudgetFont: white,                   barSpentFont: w,                      barOutline: 'rgba(192,138,42,1)',     messageFontWarn: w, messageFontDone: s };
+    if (overSpent)           return { barBackground: 'rgba(192,138,42,0.15)',  barSpentFill: w,                          barBudgetFont: white,                   barSpentFont: w,                      barOutline: 'rgba(192,138,42,0.3)',     messageFontWarn: w, messageFontDone: s };
+    if (done)                return { barBackground: 'rgba(61,126,98,0.12)',   barSpentFill: s,                          barBudgetFont: white,                   barSpentFont: s,                      barOutline: 'rgba(61,126,98,0.25)',     messageFontWarn: w, messageFontDone: s };
+    return                          { barBackground: 'var(--color-sage-70)',     barSpentFill: 'var(--color-sage)',        barBudgetFont: s,                       barSpentFont: 'var(--color-sage-250)',    barOutline: 'rgba(107,163,192,0.3)',  messageFontWarn: w, messageFontDone: s };
   };
 
-  const groupBarColors = ({ noBudget, done, overSpent }) => {
-    const w = 'var(--color-warning)', s = '#3D7E62';
-    if (noBudget)          return { barBackground: 'rgba(168,196,212,0.45)', barSpentFill: 'rgba(107,163,192,0.25)', barBudgetFont: 'var(--color-navy-50)', barSpentFont: 'var(--color-navy-50)', barOutline: 'transparent',             messageFontWarn: w, messageFontDone: s };
+  const groupBarColors = ({ notReceived, done, overSpent }) => {
+    const w = 'var(--color-warning)', s = '#3D7E62', white = 'rgba(255,255,255,0.85)';
+    if (notReceived)       return { barBackground: 'rgba(168,196,212,0.45)', barSpentFill: 'rgba(107,163,192,0.25)', barBudgetFont: 'var(--color-gray-400)', barSpentFont: 'var(--color-navy-50)', barOutline: 'transparent',             messageFontWarn: w, messageFontDone: s };
     if (done && overSpent) return { barBackground: 'rgba(192,138,42,0.2)',   barSpentFill: w,                        barBudgetFont: w,                      barSpentFont: w,                      barOutline: 'rgba(192,138,42,0.35)',    messageFontWarn: w, messageFontDone: s };
-    if (done)              return { barBackground: 'rgba(61,126,98,0.18)',   barSpentFill: s,                        barBudgetFont: s,                      barSpentFont: s,                      barOutline: 'rgba(61,126,98,0.3)',      messageFontWarn: w, messageFontDone: s };
+    if (done)              return { barBackground: 'rgba(61,126,98,0.12)',   barSpentFill: s,                          barBudgetFont: white,                   barSpentFont: s,                      barOutline: 'rgba(61,126,98,0.25)',     messageFontWarn: w, messageFontDone: s };
     return                        { barBackground: 'rgba(107,163,192,0.22)', barSpentFill: 'rgba(107,163,192,0.9)',  barBudgetFont: 'var(--color-navy-70)', barSpentFont: 'var(--color-navy-50)', barOutline: 'rgba(107,163,192,0.4)',    messageFontWarn: w, messageFontDone: s };
   };
 
   // ── GanttBar — unified progress-bar component ─────────────────────
   const GanttBar = ({ barLeft, barWidth, budget, spent, recebido, onSchedule, overSpent, done, colors }) => {
     const spentPct = budget > 0 ? Math.min(100, spent / budget * 100) : 0;
-    const labelX   = Math.max(24, Math.min(spentPct / 100 * barWidth, barWidth - 24));
+    const labelX   = Math.max(10, Math.min(spentPct / 100 * barWidth, barWidth - 10));
 
     const messages = [];
     if (!onSchedule && !done)  messages.push({ text: 'etapa atrasada',   color: colors.messageFontWarn });
@@ -304,8 +305,8 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
         <div style={{
           position: 'relative', width: '100%', height: '100%',
           background: colors.barBackground,
-          border: `1px solid ${colors.barOutline}`,
-          borderRadius: 8, overflow: 'hidden', boxSizing: 'border-box',
+          borderRadius: 8, overflow: 'hidden',
+          boxShadow: `0 0 0 1px ${colors.barOutline}`,
         }}>
           {/* Spent fill */}
           <div style={{
@@ -357,7 +358,7 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
     const overSpent  = budget > 0 && spent > budget;
     const etapaEnd   = new Date(mesToEndISO(etapa.mes) + 'T00:00:00');
     const onSchedule = done || etapaEnd >= today;
-    const colors     = itemBarColors({ noBudget: budget === 0, done, overSpent });
+    const colors     = itemBarColors({ notReceived: !recebido, done, overSpent });
     return <GanttBar
       barLeft={col.x - itemOriginX + 8} barWidth={col.width - 16}
       budget={budget} spent={spent}
@@ -386,7 +387,7 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
     const done       = allDone;
     const overSpent  = budget > 0 && spent > budget;
     const onSchedule = done || !anyOverdue;
-    const colors     = groupBarColors({ noBudget: budget === 0, done, overSpent });
+    const colors     = groupBarColors({ notReceived: recebidoSum === 0, done, overSpent });
     return <GanttBar
       barLeft={col.x - groupOriginX + CARD_PAD + 8} barWidth={col.width - 16}
       budget={budget} spent={spent}

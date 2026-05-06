@@ -25,7 +25,8 @@ const IconTrash = () => (
 // ── Local BarRow (avoids load-order dep on app.jsx) ───────────────────
 // Label sits above the bar only; R$ and % are vertically aligned to the bar.
 const GroupBarRow = ({ label, pct, absValue, barColor, trackColor, textColor }) => {
-  const clamped = Math.min(100, Math.max(0, pct || 0));
+  const raw     = Math.max(0, pct || 0);
+  const clamped = Math.min(100, raw);
   return (
     <div>
       {/* Label row — offset by the R$ column width so it sits above the bar */}
@@ -49,7 +50,7 @@ const GroupBarRow = ({ label, pct, absValue, barColor, trackColor, textColor }) 
         <span className="mono" style={{
           width: 36, flexShrink: 0, textAlign: 'right',
           fontSize: 11, fontWeight: 700, color: textColor,
-        }}>{clamped}%</span>
+        }}>{raw}%</span>
       </div>
     </div>
   );
@@ -154,7 +155,7 @@ const ItemCronograma = ({ item, dragHandleProps, onClick }) => {
   const progPct     = getProgress(latest);
   const budget      = getTotalBudget(latest);
   const spent       = getTotalSpent(latest);
-  const recebido    = 0; // placeholder — field will be wired in a future task
+  const recebido    = latest.etapas.reduce((s, e) => s + (Number(e.valorRecebido) || 0), 0);
   const gastPct     = budget === 0 ? 0 : Math.round((spent    / budget) * 100);
   const recebidoPct = budget === 0 ? 0 : Math.round((recebido / budget) * 100);
   const gastOverrun = spent > budget && budget > 0;

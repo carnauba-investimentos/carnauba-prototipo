@@ -402,7 +402,7 @@ const ItemDrawer = ({ item, isOpen, onClose, onSave, onDelete }) => {
           }}>
             <BudgetBar label="Solicitado" value={totalSolicitado} total={totalSolicitado} fillColor="var(--color-gray-400)" trackColor="var(--color-gray-200)" />
             <BudgetBar label="Recebido"   value={totalRecebido}   total={totalSolicitado} fillColor="var(--color-blue)"    trackColor="var(--color-navy-20)" />
-            <BudgetBar label="Gasto"      value={totalGasto}      total={totalSolicitado} fillColor={totalRecebido > 0 && totalGasto > totalRecebido ? 'var(--color-warning)' : 'var(--color-success)'} trackColor="var(--color-gray-200)" />
+            <BudgetBar label="Gasto"      value={totalGasto}      total={totalSolicitado} fillColor={totalSolicitado > 0 && totalGasto > totalSolicitado ? 'var(--color-warning)' : 'var(--color-success)'} trackColor="var(--color-gray-200)" />
           </div>
 
           {/* Month cards */}

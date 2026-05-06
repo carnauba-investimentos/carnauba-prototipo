@@ -2,7 +2,8 @@
 
 // ── BudgetBar ─────────────────────────────────────────────────────
 const BudgetBar = ({ label, value, total, fillColor, trackColor = 'rgba(0,0,0,0.08)', editable = false, onEdit }) => {
-  const pct        = total > 0 ? Math.min(100, Math.round((Number(value) || 0) / total * 100)) : 0;
+  const pct        = total > 0 ? Math.round((Number(value) || 0) / total * 100) : 0;
+  const barPct     = Math.min(100, pct);
   const valueColor = fillColor === 'var(--color-gray-400)' ? 'var(--color-navy-70)' : fillColor;
 
   return (
@@ -26,7 +27,7 @@ const BudgetBar = ({ label, value, total, fillColor, trackColor = 'rgba(0,0,0,0.
         </div>
         <div style={{ height: 9, background: trackColor, borderRadius: 99, overflow: 'hidden' }}>
           <div style={{
-            height: '100%', width: `${pct}%`, background: fillColor,
+            height: '100%', width: `${barPct}%`, background: fillColor,
             borderRadius: 99, transition: 'width 0.4s ease-out',
           }} />
         </div>
@@ -70,7 +71,7 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly }) => {
   const solicitado   = (Number(etapa.orcamentoMaterial) || 0) + (Number(etapa.orcamentoMaoDeObra) || 0);
   const recebido     = Number(etapa.valorRecebido) || 0;
   const gasto        = (Number(etapa.gastoMaterial) || 0) + (Number(etapa.gastoMaoDeObra) || 0);
-  const gastoOverrun = recebido > 0 && gasto > recebido;
+  const gastoOverrun = solicitado > 0 && gasto > solicitado;
   const gastoColor   = gastoOverrun ? 'var(--color-warning)' : 'var(--color-success)';
 
   const today = new Date();
@@ -200,7 +201,10 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly }) => {
             Quanto já foi gasto do valor recebido nesse mês?
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            {[['gastoMaterial', 'orcamentoMaterial', 'Material'], ['gastoMaoDeObra', 'orcamentoMaoDeObra', 'Mão de Obra']].map(([field, orcField, label]) => (
+            {[['gastoMaterial', 'orcamentoMaterial', 'Material'], ['gastoMaoDeObra', 'orcamentoMaoDeObra', 'Mão de Obra']].map(([field, orcField, label]) => {
+              const fieldOverrun = (Number(etapa[orcField]) > 0) && (Number(etapa[field]) > Number(etapa[orcField]));
+              const fieldColor   = fieldOverrun ? 'var(--color-warning)' : 'var(--color-success)';
+              return (
               <div key={field}>
                 <div style={{
                   fontSize: 9, fontWeight: 700, textTransform: 'uppercase',
@@ -209,7 +213,7 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly }) => {
                 }}>
                   {label}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, borderBottom: `1.5px solid ${gastoOverrun ? 'rgba(192,138,42,0.4)' : 'var(--color-gray-200)'}`, paddingBottom: 4 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, borderBottom: `1.5px solid ${fieldOverrun ? 'rgba(192,138,42,0.4)' : 'var(--color-gray-200)'}`, paddingBottom: 4 }}>
                   <span style={{ fontSize: 12, color: 'var(--color-navy-50)', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>R$</span>
                   <NumInput
                     value={etapa[field]}
@@ -218,7 +222,7 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly }) => {
                     style={{
                       flex: 1, border: 'none', outline: 'none',
                       fontSize: 18, fontFamily: 'var(--font-mono)', fontWeight: 700,
-                      color: gastoColor, background: 'transparent', padding: 0,
+                      color: fieldColor, background: 'transparent', padding: 0,
                     }}
                   />
                   {etapa[orcField] !== '' && etapa[orcField] !== 0 && (
@@ -228,7 +232,8 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly }) => {
                   )}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
