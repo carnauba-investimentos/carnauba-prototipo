@@ -61,8 +61,9 @@ const COL_GAP            = 8;
 const CARD_PAD           = 8;
 const LEFT_COL_W         = 300;
 const HEADER_H           = 40;
-const GROUP_ROW_H        = 164; // 8px top margin + card content
-const GROUP_FOOTER_ROW_H = 48;  // footer card + 8px bottom margin
+const GROUP_ROW_H          = 164; // 8px top margin + card content
+const GROUP_ROW_H_COLLAPSED = 80; // collapsed: name row only, tall enough for GanttGroupBar + messages
+const GROUP_FOOTER_ROW_H   = 48;  // footer card + 8px bottom margin
 const ITEM_ROW_H         = 165; // 5px v-padding each side + ItemCronograma
 
 // ── Icons ─────────────────────────────────────────────────────────
@@ -445,7 +446,8 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
     const groupOriginX = firstCol.x;
     const cardLeft     = LEFT_COL_W + groupOriginX - CARD_PAD;                         // 8px before first col
     const cardWidth    = lastCol.x + lastCol.width - groupOriginX + CARD_PAD * 2;      // +8px each side
-    const totalRows    = GROUP_ROW_H + (grupo.collapsed ? 0 : grupo.items.length * ITEM_ROW_H) + GROUP_FOOTER_ROW_H;
+    const headerH   = grupo.collapsed ? GROUP_ROW_H_COLLAPSED : GROUP_ROW_H;
+    const totalRows = headerH + (grupo.collapsed ? 0 : grupo.items.length * ITEM_ROW_H + GROUP_FOOTER_ROW_H);
 
     return (
       <div style={{
@@ -458,7 +460,7 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
         pointerEvents: 'none', overflow: 'visible',
       }}>
         {/* Group bars — centered in header area */}
-        <div style={{ position: 'relative', height: GROUP_ROW_H - 8 }}>
+        <div style={{ position: 'relative', height: headerH - 8 }}>
           {sortedMonths.map(mes => (
             <GanttGroupBar key={mes} grupo={grupo} mes={mes} groupOriginX={groupOriginX} />
           ))}
@@ -540,11 +542,11 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
                         style={{ opacity: snapshot.isDragging ? 0.9 : 1, ...provided.draggableProps.style, position: 'relative', overflow: 'visible' }}
                       >
                         {/* Group header row */}
-                        <div style={{ display: 'flex', height: GROUP_ROW_H }}>
+                        <div style={{ display: 'flex', height: grupo.collapsed ? GROUP_ROW_H_COLLAPSED : GROUP_ROW_H }}>
                           <div style={{
                             width: LEFT_COL_W, flexShrink: 0, position: 'sticky', left: 0, zIndex: 3,
                             background: 'var(--color-gray-100)',
-                            padding: '8px 8px 0 8px',
+                            padding: grupo.collapsed ? '8px 8px 8px 8px' : '8px 8px 0 8px',
                           }}>
                             <GrupoHeader
                               grupo={grupo}
@@ -605,21 +607,23 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
                           </Droppable>
                         )}
 
-                        {/* Group footer row — add item + delete */}
-                        <div style={{ display: 'flex', height: GROUP_FOOTER_ROW_H }}>
-                          <div style={{
-                            width: LEFT_COL_W, flexShrink: 0, position: 'sticky', left: 0, zIndex: 3,
-                            background: 'var(--color-gray-100)',
-                            padding: '0 8px 8px 8px',
-                          }}>
-                            <GroupFooter
-                              grupo={grupo}
-                              onAddItemToGroup={() => onAddItemToGroup(grupo.id)}
-                              onDeleteGroup={() => onDeleteGroup(grupo.id)}
-                            />
+                        {/* Group footer row — add item + delete (hidden when collapsed) */}
+                        {!grupo.collapsed && (
+                          <div style={{ display: 'flex', height: GROUP_FOOTER_ROW_H }}>
+                            <div style={{
+                              width: LEFT_COL_W, flexShrink: 0, position: 'sticky', left: 0, zIndex: 3,
+                              background: 'var(--color-gray-100)',
+                              padding: '0 8px 8px 8px',
+                            }}>
+                              <GroupFooter
+                                grupo={grupo}
+                                onAddItemToGroup={() => onAddItemToGroup(grupo.id)}
+                                onDeleteGroup={() => onDeleteGroup(grupo.id)}
+                              />
+                            </div>
+                            <RowRight bg="var(--color-gray-100)" />
                           </div>
-                          <RowRight bg="var(--color-gray-100)" />
-                        </div>
+                        )}
 
                         {/* GanttGroupCard rendered last so it paints above all RowRight backgrounds */}
                         <GanttGroupCard grupo={grupo} />

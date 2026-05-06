@@ -259,13 +259,13 @@ const GrupoHeader = ({ grupo, dragHandleProps, onToggle, onRenameGroup }) => {
         background: 'var(--color-navy-10)',
         height: '100%', boxSizing: 'border-box',
         cursor: 'grab', userSelect: 'none',
-        borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0',
+        borderRadius: grupo.collapsed ? 'var(--radius-lg)' : 'var(--radius-lg) var(--radius-lg) 0 0',
         border: '1px solid rgba(115,169,199,0.35)',
-        borderBottom: 'none',
+        borderBottom: grupo.collapsed ? '1px solid rgba(115,169,199,0.35)' : 'none',
       }}
     >
       {/* Row: chevron + name + progress */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: grupo.collapsed ? 0 : 8 }}>
         <button
           onClick={e => { e.stopPropagation(); onToggle(); }}
           style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-navy)', padding: 2, display: 'flex', flexShrink: 0, borderRadius: 4, transition: 'opacity 0.12s', opacity: 0.5 }}
@@ -299,26 +299,28 @@ const GrupoHeader = ({ grupo, dragHandleProps, onToggle, onRenameGroup }) => {
         <ProgressPie pct={progPct} overdue={isOverdue} />
       </div>
 
-      {/* Consolidated bars */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-        <GroupBarRow
-          label="Solicitado" pct={100}
-          absValue={budget ? fmtBRL(budget) : '—'}
-          barColor="var(--color-navy-50)" trackColor="var(--color-navy-20)" textColor="var(--color-navy-50)"
-        />
-        <GroupBarRow
-          label="Recebido" pct={recebidoPct}
-          absValue={fmtBRL(recebido)}
-          barColor="var(--color-blue)" trackColor="var(--color-blue-20)" textColor="var(--color-blue)"
-        />
-        <GroupBarRow
-          label="Gasto" pct={gastPct}
-          absValue={budget ? fmtBRL(spent) : '—'}
-          barColor={gastOverrun ? 'var(--color-warning)' : 'var(--color-success)'}
-          trackColor="var(--color-sage-20)"
-          textColor={gastOverrun ? 'var(--color-warning)' : 'var(--color-success)'}
-        />
-      </div>
+      {/* Consolidated bars — hidden when collapsed */}
+      {!grupo.collapsed && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+          <GroupBarRow
+            label="Solicitado" pct={100}
+            absValue={budget ? fmtBRL(budget) : '—'}
+            barColor="var(--color-navy-50)" trackColor="var(--color-navy-20)" textColor="var(--color-navy-50)"
+          />
+          <GroupBarRow
+            label="Recebido" pct={recebidoPct}
+            absValue={fmtBRL(recebido)}
+            barColor="var(--color-blue)" trackColor="var(--color-blue-20)" textColor="var(--color-blue)"
+          />
+          <GroupBarRow
+            label="Gasto" pct={gastPct}
+            absValue={budget ? fmtBRL(spent) : '—'}
+            barColor={gastOverrun ? 'var(--color-warning)' : 'var(--color-success)'}
+            trackColor="var(--color-sage-20)"
+            textColor={gastOverrun ? 'var(--color-warning)' : 'var(--color-success)'}
+          />
+        </div>
+      )}
     </div>
   );
 };
