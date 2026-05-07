@@ -59,6 +59,7 @@ const getTotalSpent = (v) =>
 const PX_DAY             = 3.5;
 const COL_GAP            = 8;
 const CARD_PAD           = 8;
+const ITEM_CARD_LABEL_W  = 20; // extra left offset on item cards to fit "v1/v2" labels
 const LEFT_COL_W         = 300;
 const HEADER_H           = 40;
 const GROUP_ROW_H          = 164; // 8px top margin + card content
@@ -305,9 +306,10 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
   }, []);
 
   // ── Color theme helpers ───────────────────────────────────────────
-  const itemBarColors = ({ notReceived, done, overSpent }) => {
-    const w = 'var(--color-warning)', s = '#3D7E62', white = 'rgba(255,255,255,0.85)';    
-    if (notReceived && done) return { barBackground: s,                          barSpentFill: 'rgba(107,163,192,0.2)',  barBudgetFont: white,                   barSpentFont: 'var(--color-navy-50)', barOutline: 'transparent',              messageFontWarn: w, messageFontDone: s };    
+  const itemBarColors = ({ notReceived, done, overSpent, oldVersion }) => {
+    if (oldVersion) return { barBackground: 'rgba(180,180,180,0.22)', barSpentFill: 'transparent', barBudgetFont: 'rgba(130,130,130,0.65)', barSpentFont: 'transparent', barOutline: 'rgba(160,160,160,0.25)', messageFontWarn: 'transparent', messageFontDone: 'transparent' };
+    const w = 'var(--color-warning)', s = '#3D7E62', white = 'rgba(255,255,255,0.85)';
+    if (notReceived && done) return { barBackground: s,                          barSpentFill: 'rgba(107,163,192,0.2)',  barBudgetFont: white,                   barSpentFont: 'var(--color-navy-50)', barOutline: 'transparent',              messageFontWarn: w, messageFontDone: s };
     if (notReceived)         return { barBackground: 'rgba(168,196,212,0.35)', barSpentFill: 'rgba(107,163,192,0.2)',  barBudgetFont: 'var(--color-gray-400)', barSpentFont: 'var(--color-navy-50)', barOutline: 'transparent',              messageFontWarn: w, messageFontDone: s };
     if (done && overSpent)   return { barBackground: 'rgba(61,126,98,0.12)',   barSpentFill: s,                          barBudgetFont: white,                   barSpentFont: w,                      barOutline: 'rgba(192,138,42,1)',     messageFontWarn: w, messageFontDone: s };
     if (overSpent)           return { barBackground: 'rgba(192,138,42,0.15)',  barSpentFill: w,                          barBudgetFont: white,                   barSpentFont: w,                      barOutline: 'rgba(192,138,42,0.3)',     messageFontWarn: w, messageFontDone: s };
@@ -324,7 +326,7 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
   };
 
   // ── GanttBar — unified progress-bar component ─────────────────────
-  const GanttBar = ({ barLeft, barWidth, budget, spent, recebido, onSchedule, overSpent, done, colors }) => {
+  const GanttBar = ({ barLeft, barWidth, budget, spent, recebido, onSchedule, overSpent, done, colors, oldVersion = false }) => {
     const spentPct = budget > 0 ? Math.min(100, spent / budget * 100) : 0;
     const labelX   = Math.max(10, Math.min(spentPct / 100 * barWidth, barWidth - 10));
 
@@ -341,7 +343,7 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
         top: '50%', transform: 'translateY(-50%)',
       }}>
         {/* Messages — float above the bar without shifting it */}
-        {messages.length > 0 && (
+        {!oldVersion && messages.length > 0 && (
           <div style={{
             position: 'absolute', bottom: '100%', left: 0, right: 0,
             marginBottom: 4,
@@ -358,7 +360,9 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
 
         {/* Bar */}
         <div style={{
-          position: 'relative', width: '100%', height: '100%',
+          position: 'relative', width: '100%',
+          height: oldVersion ? 10 : '100%',
+          marginTop: oldVersion ? 8 : 0,
           background: colors.barBackground,
           borderRadius: 8, overflow: 'hidden',
           boxShadow: `0 0 0 1px ${colors.barOutline}`,
@@ -388,7 +392,7 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
         </div>
 
         {/* Spent label — floats below the bar, tracks fill edge */}
-        {spent > 0 && (
+        {!oldVersion && spent > 0 && (
           <span style={{
             position: 'absolute', top: '100%', marginTop: 3,
             left: labelX, transform: 'translateX(-50%)',
@@ -403,7 +407,7 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
   };
 
   // ── GanttItemBar — thin wrapper computing states for one etapa ────
-  const GanttItemBar = ({ etapa, itemOriginX }) => {
+  const GanttItemBar = ({ etapa, itemOriginX, oldVersion = false }) => {
     const col    = getCol(etapa.mes);
     if (!col) return null;
     const budget     = (Number(etapa.orcamentoMaterial) || 0) + (Number(etapa.orcamentoMaoDeObra) || 0);
@@ -413,12 +417,12 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
     const overSpent  = budget > 0 && spent > budget;
     const etapaEnd   = new Date(mesToEndISO(etapa.mes) + 'T00:00:00');
     const onSchedule = done || etapaEnd >= today;
-    const colors     = itemBarColors({ notReceived: !recebido, done, overSpent });
+    const colors     = itemBarColors({ notReceived: !recebido, done, overSpent, oldVersion });
     return <GanttBar
       barLeft={col.x - itemOriginX + 8} barWidth={col.width - 16}
       budget={budget} spent={spent}
       recebido={recebido} onSchedule={onSchedule} overSpent={overSpent} done={done}
-      colors={colors}
+      colors={colors} oldVersion={oldVersion}
     />;
   };
 
@@ -444,7 +448,7 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
     const onSchedule = done || !anyOverdue;
     const colors     = groupBarColors({ notReceived: recebidoSum === 0, done, overSpent });
     return <GanttBar
-      barLeft={col.x - groupOriginX + CARD_PAD + 8} barWidth={col.width - 16}
+      barLeft={col.x - groupOriginX + CARD_PAD + ITEM_CARD_LABEL_W + 8} barWidth={col.width - 16}
       budget={budget} spent={spent}
       recebido={recebidoSum > 0} onSchedule={onSchedule} overSpent={overSpent} done={done}
       colors={colors}
@@ -453,16 +457,29 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
 
   // ── GanttItemCard — white card for one item, vertically aligned with left column card ──
   const GanttItemCard = ({ item, itemIndex, groupOriginX, onClick }) => {
-    const latest = item.versions[item.versions.length - 1];
-    const etapas = latest.etapas.filter(e => e.mes && getCol(e.mes));
-    if (!etapas.length) return null;
-    const sorted     = etapas.slice().sort((a, b) => a.mes < b.mes ? -1 : 1);
-    const firstCol   = getCol(sorted[0].mes);
-    const lastCol    = getCol(sorted[sorted.length - 1].mes);
-    const cardLeft   = firstCol.x - groupOriginX + CARD_PAD;           // 8px from group card left
-    const cardWidth  = lastCol.x + lastCol.width - firstCol.x;         // full column span
-    const cardTop    = GROUP_ROW_H - 3 + itemIndex * ITEM_ROW_H;       // matches left col 5px top padding
-    const cardHeight = ITEM_ROW_H - 10;                                 // matches left col 5+5px padding
+    const showOld      = item.versions.length >= 2;
+    const v1           = showOld ? item.versions[0] : null;
+    const latest       = item.versions[item.versions.length - 1];
+    const v1Etapas     = v1 ? v1.etapas.filter(e => e.mes && getCol(e.mes)) : [];
+    const latestEtapas = latest.etapas.filter(e => e.mes && getCol(e.mes));
+    const allEtapas    = [...latestEtapas, ...v1Etapas];
+    if (!allEtapas.length) return null;
+    const sorted      = allEtapas.slice().sort((a, b) => a.mes < b.mes ? -1 : 1);
+    const firstCol    = getCol(sorted[0].mes);
+    const lastCol     = getCol(sorted[sorted.length - 1].mes);
+    const cardLeft    = firstCol.x - groupOriginX + CARD_PAD;
+    const cardWidth   = lastCol.x + lastCol.width - firstCol.x + ITEM_CARD_LABEL_W;
+    const cardTop     = GROUP_ROW_H - 3 + itemIndex * ITEM_ROW_H;
+    const cardHeight  = ITEM_ROW_H - 10;
+    const itemOriginX = firstCol.x - ITEM_CARD_LABEL_W;
+    // Split card vertically: current version upper ~60%, old version lower ~40%
+    const curBandH    = showOld ? Math.round(cardHeight * 0.60) : cardHeight;
+    const oldBandH    = showOld ? cardHeight - curBandH : 0;
+    const vLabelStyle = {
+      position: 'absolute', left: 4, top: '50%', transform: 'translateY(-50%)',
+      fontSize: 9, fontWeight: 700, fontFamily: 'var(--font-mono)',
+      letterSpacing: '0.05em', userSelect: 'none', pointerEvents: 'none',
+    };
     return (
       <div
         onClick={onClick}
@@ -478,9 +495,22 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
         onMouseEnter={e => e.currentTarget.style.boxShadow = '0 3px 10px rgba(13,27,38,0.12)'}
         onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 4px rgba(13,27,38,0.06)'}
       >
-        {sorted.map(etapa => (
-          <GanttItemBar key={etapa.id || etapa.mes} etapa={etapa} itemOriginX={firstCol.x} />
-        ))}
+        {/* Current version band — upper portion */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: curBandH }}>
+          <span style={{ ...vLabelStyle, color: 'var(--color-navy-70)' }}>v{latest.number}</span>
+          {latestEtapas.map(etapa => (
+            <GanttItemBar key={etapa.id || etapa.mes} etapa={etapa} itemOriginX={itemOriginX} oldVersion={false} />
+          ))}
+        </div>
+        {/* Old version band (v1) — lower portion */}
+        {showOld && (
+          <div style={{ position: 'absolute', top: curBandH, left: 0, right: 0, height: oldBandH }}>
+            <span style={{ ...vLabelStyle, color: 'rgba(150,150,150,0.7)' }}>v{v1.number}</span>
+            {v1Etapas.map(etapa => (
+              <GanttItemBar key={etapa.id || etapa.mes} etapa={etapa} itemOriginX={itemOriginX} oldVersion={true} />
+            ))}
+          </div>
+        )}
       </div>
     );
   };
@@ -498,8 +528,8 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
     const firstCol     = getCol(sortedMonths[0]);
     const lastCol      = getCol(sortedMonths[sortedMonths.length - 1]);
     const groupOriginX = firstCol.x;
-    const cardLeft     = LEFT_COL_W + groupOriginX - CARD_PAD;                         // 8px before first col
-    const cardWidth    = lastCol.x + lastCol.width - groupOriginX + CARD_PAD * 2;      // +8px each side
+    const cardLeft     = LEFT_COL_W + groupOriginX - CARD_PAD - ITEM_CARD_LABEL_W;
+    const cardWidth    = lastCol.x + lastCol.width - groupOriginX + CARD_PAD * 2 + ITEM_CARD_LABEL_W;
     const headerH   = grupo.collapsed ? GROUP_ROW_H_COLLAPSED : GROUP_ROW_H;
     const totalRows = headerH + (grupo.collapsed ? 0 : grupo.items.length * ITEM_ROW_H + GROUP_FOOTER_ROW_H);
 

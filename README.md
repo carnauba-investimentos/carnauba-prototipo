@@ -7,6 +7,7 @@ Aplicação web de gerenciamento de cronograma e orçamento de projetos de inves
 - **Cronograma Gantt interativo** — visualização em meses com barras de progresso por grupo e por item
 - **Grupos de itens** — itens organizados em grupos recolhíveis com drag-and-drop para reordenação
 - **Controle de versões** — cada edição pode gerar uma nova versão do item, preservando o histórico completo
+- **Histórico de versões no Gantt** — quando um item tem 2 ou mais versões, o card Gantt exibe as duas versões simultaneamente: a versão atual (v*n*) na faixa superior do card com cores normais, e a v1 original na faixa inferior como uma barra fina (10 px) em cinza, sem mensagens nem rótulo de gasto — permitindo comparar visualmente o planejamento original com o atual. Cada faixa tem um rótulo "v1", "v2" … à esquerda. No ItemDrawer, todas as versões continuam acessíveis.
 - **Rastreamento financeiro** — orçamento previsto (material + mão de obra) vs. realizado por etapa mensal
 - **Alertas de estouro** — avisos visuais quando o gasto supera o orçamento (>100%)
 - **Indicadores de progresso** — barras de KPI mostrando avanço (%), duração decorrida (%) e gasto (%)
