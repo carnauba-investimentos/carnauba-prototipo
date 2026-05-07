@@ -382,7 +382,7 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
             padding: '0 6px',
           }}>
             <span style={{
-              fontSize: 11, fontWeight: 700, color: colors.barBudgetFont,
+              fontSize: oldVersion ? 9 : 11, fontWeight: 700, color: colors.barBudgetFont,
               fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap',
               overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1,
             }}>
@@ -476,7 +476,7 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
     const curBandH    = showOld ? Math.round(cardHeight * 0.60) : cardHeight;
     const oldBandH    = showOld ? cardHeight - curBandH : 0;
     const vLabelStyle = {
-      position: 'absolute', left: 4, top: '50%', transform: 'translateY(-50%)',
+      position: 'absolute', left:8, top: '50%', transform: 'translateY(-50%)',
       fontSize: 9, fontWeight: 700, fontFamily: 'var(--font-mono)',
       letterSpacing: '0.05em', userSelect: 'none', pointerEvents: 'none',
     };
@@ -532,6 +532,7 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
     const cardWidth    = lastCol.x + lastCol.width - groupOriginX + CARD_PAD * 2 + ITEM_CARD_LABEL_W;
     const headerH   = grupo.collapsed ? GROUP_ROW_H_COLLAPSED : GROUP_ROW_H;
     const totalRows = headerH + (grupo.collapsed ? 0 : grupo.items.length * ITEM_ROW_H + GROUP_FOOTER_ROW_H);
+    const maxVersionNum = grupo.items.reduce((max, item) => Math.max(max, item.versions[item.versions.length - 1].number), 1);
 
     return (
       <div style={{
@@ -545,6 +546,11 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
       }}>
         {/* Group bars — centered in header area */}
         <div style={{ position: 'relative', height: headerH - 8 }}>
+          <span style={{
+            position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
+            fontSize: 9, fontWeight: 700, fontFamily: 'var(--font-mono)',
+            letterSpacing: '0.05em', userSelect: 'none', color: 'var(--color-navy-70)',
+          }}>v{maxVersionNum}</span>
           {sortedMonths.map(mes => (
             <GanttGroupBar key={mes} grupo={grupo} mes={mes} groupOriginX={groupOriginX} />
           ))}
