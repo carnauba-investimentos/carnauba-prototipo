@@ -80,6 +80,12 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly }) => {
     const [y, m] = etapa.mes.split('-').map(Number);
     return today.getFullYear() === y && today.getMonth() + 1 === m;
   })();
+  const isOverdue = (() => {
+    if (!etapa.mes || etapa.feito) return false;
+    const [y, m] = etapa.mes.split('-').map(Number);
+    const end = new Date(y, m, 0); // last day of the month
+    return end < today;
+  })();
 
   const handleRecebidoConfirm = () => {
     onChange('valorRecebido', recebidoDraft === '' ? '' : Number(recebidoDraft));
@@ -87,13 +93,17 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly }) => {
   };
 
   // Circle appearance
-  const circleBg     = etapa.feito ? 'var(--color-success)' : 'var(--color-blue)';
-  const circleOpacity = (!etapa.feito && !isCurrentMonth) ? 0.55 : 1;
+  const circleBg      = etapa.feito ? 'var(--color-success)' : isOverdue ? 'var(--color-warning)' : 'var(--color-blue)';
+  const circleOpacity = (!etapa.feito && !isCurrentMonth && !isOverdue) ? 0.55 : 1;
+
+  // Border & month name color
+  const cardBorderColor = etapa.feito ? 'rgba(58,143,106,0.4)' : isOverdue ? 'rgba(192,138,42,0.5)' : 'rgba(66,140,185,0.3)';
+  const monthNameColor  = isOverdue ? 'var(--color-warning)' : 'var(--color-navy)';
 
   return (
     <div style={{
       borderRadius: 'var(--radius-lg)',
-      border: `1.5px solid ${etapa.feito ? 'rgba(58,143,106,0.4)' : 'rgba(66,140,185,0.3)'}`,
+      border: `1.5px solid ${cardBorderColor}`,
       background: '#EEF3F8',
       overflow: 'hidden',
       marginBottom: 12,
@@ -113,11 +123,22 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly }) => {
         </div>
 
         {/* Month name */}
-        <span style={{
-          flex: 1, fontSize: 16, fontWeight: 700,
-          color: 'var(--color-navy)', fontFamily: 'var(--font-display)',
-        }}>
-          {fmtMes(etapa.mes)}
+        <span style={{ flex: 1, display: 'flex', alignItems: 'baseline', gap: 8, minWidth: 0 }}>
+          <span style={{
+            fontSize: 16, fontWeight: 700,
+            color: monthNameColor, fontFamily: 'var(--font-display)',
+            transition: 'color 0.2s',
+          }}>
+            {fmtMes(etapa.mes)}
+          </span>
+          {isOverdue && (
+            <span style={{
+              fontSize: 11, fontWeight: 600, color: 'var(--color-warning)',
+              fontFamily: 'var(--font-display)', opacity: 0.85, whiteSpace: 'nowrap',
+            }}>
+              Etapa atrasada.
+            </span>
+          )}
         </span>
 
         {/* % of total execution */}
