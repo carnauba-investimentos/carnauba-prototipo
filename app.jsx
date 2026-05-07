@@ -94,12 +94,39 @@ const IconEdit = () =>
     <path d="M1 9.5h9M7 1.5l2 2L3.5 9H1.5V7L7 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
   </svg>;
 
+const IconSave = () =>
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <path d="M2 2.5A1.5 1.5 0 0 1 3.5 1h6.086a1 1 0 0 1 .707.293l2.414 2.414A1 1 0 0 1 13 4.414V11.5A1.5 1.5 0 0 1 11.5 13h-9A1.5 1.5 0 0 1 1 11.5v-9Z" stroke="currentColor" strokeWidth="1.3" />
+    <rect x="4" y="1" width="5" height="3.5" rx="0.5" stroke="currentColor" strokeWidth="1.3" />
+    <rect x="3" y="7.5" width="8" height="4.5" rx="0.5" stroke="currentColor" strokeWidth="1.3" />
+  </svg>;
+
+// ── Template persistence ───────────────────────────────────────────
+const TEMPLATE_KEY = 'carnauba_template';
+
+const saveTemplate = (projectName, grupos) => {
+  localStorage.setItem(TEMPLATE_KEY, JSON.stringify({ projectName, grupos }));
+};
+
+const loadTemplate = () => {
+  try {
+    const raw = localStorage.getItem(TEMPLATE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+};
 
 
 // ── Sidebar ────────────────────────────────────────────────────────
-const Sidebar = ({ collapsed, onToggle, projectName, onProjectNameChange }) => {
+const Sidebar = ({ collapsed, onToggle, projectName, onProjectNameChange, onSaveTemplate }) => {
   const [editing, setEditing] = useState(false);
+  const [saved, setSaved] = useState(false);
   const inputRef = useRef(null);
+
+  const handleSaveTemplate = () => {
+    onSaveTemplate();
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1500);
+  };
 
   useEffect(() => {
     if (editing && inputRef.current) inputRef.current.focus();
@@ -171,6 +198,33 @@ const Sidebar = ({ collapsed, onToggle, projectName, onProjectNameChange }) => {
             </span>
           }
         </div>
+      </div>
+
+      <div style={{
+        height: 44, display: 'flex', alignItems: 'center',
+        padding: collapsed ? '0 12px' : '0 14px',
+        borderTop: '1px solid rgba(255,255,255,0.08)', flexShrink: 0,
+        justifyContent: collapsed ? 'center' : 'flex-start',
+      }}>
+        <button
+          onClick={handleSaveTemplate}
+          title="Salvar como template"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            background: 'transparent', border: 'none', cursor: 'pointer',
+            padding: 0, opacity: saved ? 1 : 0.35, transition: 'opacity 0.15s',
+            color: saved ? 'rgba(115,169,199,0.9)' : 'rgba(255,255,255,0.8)',
+          }}
+          onMouseEnter={e => { if (!saved) e.currentTarget.style.opacity = '1'; }}
+          onMouseLeave={e => { if (!saved) e.currentTarget.style.opacity = '0.35'; }}
+        >
+          <IconSave />
+          {!collapsed && (
+            <span style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
+              {saved ? 'Salvo!' : 'Salvar como template'}
+            </span>
+          )}
+        </button>
       </div>
 
       <div style={{
@@ -721,12 +775,13 @@ const DEFAULT_GRUPOS = [
 
 // ── App ────────────────────────────────────────────────────────────
 const App = () => {
-  const [grupos, setGrupos]               = useState(DEFAULT_GRUPOS);
+  const _saved = loadTemplate();
+  const [grupos, setGrupos]               = useState(_saved?.grupos      ?? DEFAULT_GRUPOS);
   const [modalOpen, setModalOpen]         = useState(false);
   const [editingItem, setEditingItem]     = useState(null);
   const [editingContext, setEditingContext] = useState(null); // { grupoId }
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [projectName, setProjectName]     = useState('Projeto');
+  const [projectName, setProjectName]     = useState(_saved?.projectName ?? 'Projeto');
 
   const handleOpenItem = (item, grupoId) => {
     const resolvedGrupoId = grupoId || grupos.find(g => g.items.some(i => i.id === item.id))?.id;
@@ -829,6 +884,7 @@ const App = () => {
         onToggle={() => setSidebarCollapsed(v => !v)}
         projectName={projectName}
         onProjectNameChange={setProjectName}
+        onSaveTemplate={() => saveTemplate(projectName, grupos)}
       />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>

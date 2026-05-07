@@ -4,26 +4,30 @@ Aplicação web de gerenciamento de cronograma e orçamento de projetos de inves
 
 ## Funcionalidades
 
-- **Cronograma Gantt interativo** com três níveis de zoom: dias, semanas e meses
-- **Controle de versões**: cada edição gera uma nova versão do item, preservando o histórico completo
-- **Rastreamento financeiro**: orçamento previsto vs. investimento realizado por etapa
-- **Indicadores de progresso**: barras de KPI mostrando avanço (%), duração decorrida (%) e gasto (%)
-- **Tooltip contextual**: ao passar o cursor sobre uma barra do Gantt, exibe detalhes de todas as versões
-- **Edição de etapas em cascata**: ao alterar a data de término de uma etapa, as datas seguintes são ajustadas automaticamente
-- **Linha do hoje**: marcador visual da data atual no cronograma
-- **Sidebar recolhível** com nome de projeto editável
+- **Cronograma Gantt interativo** — visualização em meses com barras de progresso por grupo e por item
+- **Grupos de itens** — itens organizados em grupos recolhíveis com drag-and-drop para reordenação
+- **Controle de versões** — cada edição pode gerar uma nova versão do item, preservando o histórico completo
+- **Rastreamento financeiro** — orçamento previsto (material + mão de obra) vs. realizado por etapa mensal
+- **Alertas de estouro** — avisos visuais quando o gasto supera o orçamento (>100%)
+- **Indicadores de progresso** — barras de KPI mostrando avanço (%), duração decorrida (%) e gasto (%)
+- **Linha do hoje** — marcador visual da data atual no cronograma
+- **Sidebar recolhível** — com nome de projeto editável
+- **Salvar como template** — persiste o estado completo (grupos, itens, etapas, nome do projeto) no `localStorage` e restaura automaticamente ao reabrir o app
 
 ## Estrutura do Projeto
 
 ```
 carnauba-prototipo/
-├── index.html          # Ponto de entrada — carrega React, Babel e CSS
-├── app.jsx             # Componentes principais: App, Sidebar, GanttChart, barras de KPI
-├── item-modal.jsx      # Modal de criação/edição de itens e etapas
-└── design-system/      # Submodule → carnauba-investimentos/carnauba-design-system
-    ├── colors_and_type.css   # Tokens de cor, tipografia e espaçamento
-    ├── fonts/                # Família tipográfica Aptos completa
-    └── assets/               # Logotipos SVG (claro e escuro)
+├── index.html               # Ponto de entrada — carrega React, Babel e CSS
+├── app.jsx                  # App, Sidebar, GanttChart, ícones, persistência de template
+├── cronograma-itens.jsx     # Cards de ItemCronograma e GrupoItensCronograma
+├── item-modal.jsx           # Modal de edição de itens existentes e histórico de versões
+├── novo-item-drawer.jsx     # Drawer de criação de novos itens com formulário em etapas
+├── month-card.jsx           # Card de etapa mensal (modo edição e rastreamento)
+└── design-system/           # Submodule → carnauba-investimentos/carnauba-design-system
+    ├── colors_and_type.css  # Tokens de cor, tipografia e espaçamento
+    ├── fonts/               # Família tipográfica Aptos completa
+    └── assets/              # Logotipos SVG (claro e escuro)
 ```
 
 ## Tecnologias
@@ -92,23 +96,34 @@ git push
 
 ## Modelo de dados
 
-Cada item do cronograma segue a estrutura abaixo:
-
 ```
-Item
-└── versions[]
-    ├── number          — número da versão
-    ├── nome            — nome do item nesta versão
-    └── etapas[]
+Grupo
+├── id
+├── nome
+├── collapsed           — estado recolhido/expandido
+└── items[]
+    └── Item
         ├── id
-        ├── titulo      — título da etapa
-        ├── definicao   — descrição
-        ├── dataInicio  — data de início (ISO)
-        ├── dataFim     — data de término (ISO)
-        ├── feito       — concluída (boolean)
-        ├── orcamento   — valor orçado (BRL)
-        └── investimentoRealizado — valor realizado (BRL)
+        └── versions[]
+            ├── number          — número da versão
+            ├── date            — data de criação (ISO)
+            ├── nome            — nome do item nesta versão
+            └── etapas[]
+                ├── id
+                ├── mes                  — mês de referência (YYYY-MM)
+                ├── percentual           — % do escopo total desta etapa
+                ├── orcamentoMaterial    — orçado: material (BRL)
+                ├── orcamentoMaoDeObra   — orçado: mão de obra (BRL)
+                ├── descricao            — descrição das atividades
+                ├── feito                — etapa concluída (boolean)
+                ├── gastoMaterial        — realizado: material (BRL)
+                ├── gastoMaoDeObra       — realizado: mão de obra (BRL)
+                └── valorRecebido        — valor recebido nesta etapa (BRL)
 ```
+
+### Template (localStorage)
+
+Ao clicar em **Salvar como template** na sidebar, o estado inteiro é serializado como JSON na chave `carnauba_template` do `localStorage`. Na próxima abertura, o app restaura automaticamente grupos, itens e nome do projeto a partir desta chave; se ausente, usa os dados padrão embutidos no código.
 
 ## Localização
 
