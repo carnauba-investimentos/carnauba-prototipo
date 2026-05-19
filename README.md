@@ -4,13 +4,15 @@ Aplicação web de gerenciamento de cronograma e orçamento de projetos de inves
 
 ## Funcionalidades
 
-- **Cronograma Gantt interativo** — visualização em meses com barras de progresso por grupo e por item
+- **Modos de visualização (Financeiro / Físico)** — alternados por um controle segmentado na barra superior; todos os componentes atualizam simultaneamente
+  - **Financeiro** (paleta verde): barras de 3 segmentos mostrando Solicitado → Recebido → Gasto com rótulos em R$ abreviados
+  - **Físico** (paleta azul): barras de 3 segmentos mostrando Planejado → Ativo (meses iniciados, não concluídos) → Realizado (etapas `feito=true`) com rótulos em %
+- **ProgressCard — componente paramétrico unificado** — substitui todos os componentes de barra anteriores; recebe `segments[]` com cor e rótulo por camada, suporta modo expansível com corpo e rodapé, título editável por duplo-clique e drag-and-drop integrado
+- **Cronograma Gantt interativo** — visualização em meses com barras de progresso por grupo e por item, usando `ProgressCard` com segmentos por VM
+- **Título do item no card Gantt** — cada `GanttItemCard` exibe o nome e versão do item à esquerda das barras mensais; as barras permanecem sempre alinhadas à grade de meses independentemente do título
 - **Grupos de itens** — itens organizados em grupos recolhíveis com drag-and-drop para reordenação
 - **Controle de versões** — cada edição pode gerar uma nova versão do item, preservando o histórico completo
-- **Histórico de versões no Gantt** — quando um item tem 2 ou mais versões, o card Gantt exibe as duas versões simultaneamente: a versão atual (v*n*) na faixa superior do card com cores normais, e a v1 original na faixa inferior como uma barra fina (10 px) em cinza, sem mensagens nem rótulo de gasto — permitindo comparar visualmente o planejamento original com o atual. Cada faixa tem um rótulo "v1", "v2" … à esquerda. No ItemDrawer, todas as versões continuam acessíveis.
 - **Rastreamento financeiro** — orçamento previsto (material + mão de obra) vs. realizado por etapa mensal
-- **Alertas de estouro** — avisos visuais quando o gasto supera o orçamento (>100%)
-- **Indicadores de progresso** — barras de KPI mostrando avanço (%), duração decorrida (%) e gasto (%)
 - **Linha do hoje** — marcador visual da data atual no cronograma
 - **Sidebar recolhível** — com nome de projeto editável
 - **Salvar como template** — persiste o estado completo (grupos, itens, etapas, nome do projeto) no `localStorage` e restaura automaticamente ao reabrir o app
@@ -20,8 +22,11 @@ Aplicação web de gerenciamento de cronograma e orçamento de projetos de inves
 ```
 carnauba-prototipo/
 ├── index.html               # Ponto de entrada — carrega React, Babel e CSS
-├── app.jsx                  # App, Sidebar, GanttChart, ícones, persistência de template
-├── cronograma-itens.jsx     # Cards de ItemCronograma e GrupoItensCronograma
+├── app.jsx                  # App, Sidebar, GanttChart, GanttGroupCard, GanttItemCard,
+│                            #   GanttGroupBar, GanttItemBar, VmToggle, ícones, persistência
+├── cronograma-itens.jsx     # ProgressCard, ItemCronograma, GrupoHeader, GrupoItensCronograma,
+│                            #   GroupFooter, helpers de VM (buildSegments, getRealizadoPct…),
+│                            #   constantes de cor (VM_NEUTRAL, VM_FINANCEIRO, VM_FISICO)
 ├── item-modal.jsx           # Modal de edição de itens existentes e histórico de versões
 ├── novo-item-drawer.jsx     # Drawer de criação de novos itens com formulário em etapas
 ├── month-card.jsx           # Card de etapa mensal (modo edição e rastreamento)
@@ -49,6 +54,14 @@ Os tokens visuais (cores, tipografia, espaçamento, sombras) vêm do repositóri
 - **Semânticas:** Success `#3A8F6A`, Warning `#C08A2A`, Error `#B84040`
 - **Tipografia:** família Aptos (Display, Standard, Narrow, Serif, Mono) em pesos 300–900
 - **Escala de espaçamento:** 4 px a 96 px
+
+As paletas de VM são definidas em `cronograma-itens.jsx` como constantes exportadas via `window`:
+
+| Constante | Uso | Cor principal |
+|---|---|---|
+| `VM_FINANCEIRO` | Modo Financeiro (verde) | `#389579` (gasto), `#92B7AD` (recebido) |
+| `VM_FISICO` | Modo Físico (azul) | `#3289C0` (realizado), `#8BBBD6` (ativo) |
+| `VM_NEUTRAL` | Neutros compartilhados | `#BDC6D6` (trilho), `#DFE4EA` (corpo), `#EDF1F6` (fundo) |
 
 ## Como clonar (nova máquina)
 
