@@ -30,7 +30,7 @@ const newEtapaObj = () => ({
   id: `e${Date.now()}${Math.random().toString(36).slice(2, 5)}`,
   mes: '', percentual: '', orcamentoMaterial: '', orcamentoMaoDeObra: '',
   descricao: '', feito: false, gastoMaterial: '', gastoMaoDeObra: '',
-  valorRecebido: '',
+  valorRecebido: '', percentualRealizado: 0,
 });
 
 // ── NumInput ──────────────────────────────────────────────────────
@@ -171,7 +171,7 @@ const ConfirmDialog = ({ show, nextVersionNumber, onConfirm, onCancel }) => {
 };
 
 // ── ItemDrawer ────────────────────────────────────────────────────
-const ItemDrawer = ({ item, isOpen, onClose, onSave, onDelete }) => {
+const ItemDrawer = ({ item, isOpen, onClose, onSave, onDelete, vizMode = 'financeiro' }) => {
   const [activeVersionIdx, setActiveVersionIdx] = useState(0);
   const [editEtapas, setEditEtapas] = useState([]);
   const [showEdit, setShowEdit] = useState(false);
@@ -242,7 +242,7 @@ const ItemDrawer = ({ item, isOpen, onClose, onSave, onDelete }) => {
 
   if (!isOpen || !item) return null;
 
-  const activeVersion  = item.versions[activeVersionIdx];
+  const activeVersion   = item.versions[activeVersionIdx];
   const displayedEtapas = isLatest ? editEtapas : activeVersion.etapas;
   const nome            = activeVersion.nome;
   const nextVersionNum  = item.versions.length + 1;
@@ -254,11 +254,81 @@ const ItemDrawer = ({ item, isOpen, onClose, onSave, onDelete }) => {
   const totalSolicitado = editEtapas.reduce((s, e) => s + (Number(e.orcamentoMaterial) || 0) + (Number(e.orcamentoMaoDeObra) || 0), 0);
   const totalRecebido   = editEtapas.reduce((s, e) => s + (Number(e.valorRecebido) || 0), 0);
   const totalGasto      = editEtapas.reduce((s, e) => s + (Number(e.gastoMaterial) || 0) + (Number(e.gastoMaoDeObra) || 0), 0);
+  const totalGastoOverrun = totalSolicitado > 0 && totalGasto > totalSolicitado;
 
   const editInitialData = {
     nome: item.versions[latestIdx].nome,
     etapas: JSON.parse(JSON.stringify(editEtapas)),
   };
+
+  // ── FINANCEIRO header StatusDiv: 3 aggregate ValueTags ───────────
+  const headerFinanceiroStatusDiv = (
+    <div style={{ display: 'flex', gap: 6 }}>
+      <ValueTag
+        label="GASTO"
+        value={fmtBRLModal(totalGasto)}
+        bg={totalGastoOverrun ? VM_WARNING.active : VM_FINANCEIRO.complete}
+        color={totalGastoOverrun ? VM_WARNING.text1 : 'white'}
+      />
+      <ValueTag
+        label="RECEBIDO"
+        value={fmtBRLModal(totalRecebido)}
+        bg={VM_FINANCEIRO.active}
+        color={VM_FINANCEIRO.text1}
+      />
+      <ValueTag
+        label="SOLICITADO"
+        value={fmtBRLModal(totalSolicitado)}
+        bg={VM_NEUTRAL.bg3}
+        color={VM_NEUTRAL.text2}
+      />
+    </div>
+  );
+
+  // ── FISICO header StatusDiv: aggregate progress bar ──────────────
+  const fisicoRealizadoPct = editEtapas.reduce((sum, e) => {
+    const perc = Number(e.percentual) || 0;
+    const real = Number(e.percentualRealizado) || 0;
+    return sum + (perc * real / 100);
+  }, 0);
+  const fisicoOverduePct = Math.min(100, displayedEtapas
+    .filter(e => etapaShowsWarning(e))
+    .reduce((s, e) => s + (Number(e.percentual) || 0), 0));
+  const _today = new Date(); _today.setHours(0, 0, 0, 0);
+  const fisicoAtivoPct  = Math.min(100, displayedEtapas
+    .filter(e => e.mes && new Date(e.mes + '-01T00:00:00') <= _today)
+    .reduce((s, e) => s + (Number(e.percentual) || 0), 0));
+  const fisicoActivePct = Math.min(100, fisicoAtivoPct + fisicoOverduePct);
+
+  const headerFisicoStatusDiv = (
+    <div style={{ minWidth: 220 }}>
+      <SegBar
+        segments={[
+          { pct: 100,              bg: VM_NEUTRAL.bg3,    label: null,                                                   labelColor: VM_NEUTRAL.text1 },
+          { pct: fisicoActivePct,  bg: fisicoOverduePct > 0 ? VM_WARNING.active   : VM_FISICO.active,   label: fisicoActivePct  > 0 ? `${Math.round(fisicoActivePct)}%`  : null, labelColor: fisicoOverduePct > 0 ? VM_WARNING.text2 : VM_FISICO.text2 },
+          { pct: fisicoRealizadoPct, bg: fisicoOverduePct > 0 ? VM_WARNING.complete : VM_FISICO.complete, label: fisicoRealizadoPct > 0 ? `${Math.round(fisicoRealizadoPct)}%` : null, labelColor: fisicoOverduePct > 0 ? VM_WARNING.text1 : VM_FISICO.text1 },
+        ]}
+        height={28}
+        borderRadius={8}
+        label="% DO ITEM EM RELAÇÃO AO CRONOGRAMA"
+      />
+    </div>
+  );
+
+  // Version tags for DrawerHeader Row 2
+  const versionTags = item.versions.map((v, idx) => ({
+    label: `v${v.number}${v.date ? ` · ${fmtDatePT(v.date)}` : ''}`,
+    fill: activeVersionIdx === idx ? 'var(--color-navy)' : 'transparent',
+    strokeColor: activeVersionIdx === idx ? 'var(--color-navy)' : 'var(--color-gray-200)',
+    textStyle: {
+      color: activeVersionIdx === idx ? 'white' : 'var(--color-gray-500)',
+      fontFamily: 'var(--font-mono)',
+      fontSize: 10,
+      fontWeight: activeVersionIdx === idx ? 700 : 400,
+      cursor: 'pointer',
+    },
+    _idx: idx,
+  }));
 
   return (
     <>
@@ -319,49 +389,35 @@ const ItemDrawer = ({ item, isOpen, onClose, onSave, onDelete }) => {
 
         {/* ── Header ── */}
         <div style={{
-          padding: '14px 20px 10px',
           background: 'var(--color-white)',
           borderBottom: '1px solid var(--color-gray-200)',
           flexShrink: 0,
         }}>
-          {/* Name row + Editar */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{
-                fontWeight: 700, fontFamily: 'var(--font-display)', fontSize: 15,
-                color: 'var(--color-navy)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              }}>
-                {nome}
-              </div>
-              {startMes && endMes && (
-                <div style={{ fontSize: 12, color: 'var(--color-navy-50)', fontFamily: 'var(--font-display)', marginTop: 2 }}>
-                  {fmtMesShort(startMes)} a {fmtMesShort(endMes)}
-                </div>
-              )}
-            </div>
+          {/* Version tags row is passed as tags to DrawerHeader */}
+          {/* We render DrawerHeader then handle version tag clicks via a wrapper */}
+          <DrawerHeader
+            circle={null}
+            title={nome}
+            subtitle={startMes && endMes ? `${fmtMesShort(startMes)} a ${fmtMesShort(endMes)}` : null}
+            titleStyle={{
+              fontSize: 15, fontWeight: 700,
+              fontFamily: 'var(--font-display)',
+              color: 'var(--color-navy)',
+            }}
+            subtitleStyle={{
+              fontSize: 12,
+              color: 'var(--color-navy)',
+              opacity: 0.55,
+            }}
+            statusDiv={vizMode === 'fisico' ? headerFisicoStatusDiv : headerFinanceiroStatusDiv}
+            padding="14px 20px"
+            gap={10}
+            tags={[]}
+          />
 
-            {isLatest && (
-              <button
-                onClick={() => setShowEdit(true)}
-                style={{
-                  background: 'transparent', border: '1px solid var(--color-gray-200)',
-                  borderRadius: 'var(--radius-sm)', cursor: 'pointer',
-                  padding: '5px 12px', fontSize: 12, fontWeight: 600,
-                  color: 'var(--color-navy-70)', fontFamily: 'var(--font-display)',
-                  display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0,
-                  transition: 'border-color 0.15s, color 0.15s',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-navy)'; e.currentTarget.style.color = 'var(--color-navy)'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-gray-200)'; e.currentTarget.style.color = 'var(--color-navy-70)'; }}
-              >
-                <IconEditSm /> Editar
-              </button>
-            )}
-          </div>
-
-          {/* Version tags */}
+          {/* Version tags row (separate — needs click handlers per tag) */}
           {item.versions.length > 0 && (
-            <div style={{ display: 'flex', gap: 4, marginTop: 8, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 4, padding: '0 20px 12px', flexWrap: 'wrap', alignItems: 'center' }}>
               {item.versions.map((v, idx) => (
                 <button
                   key={v.number}
@@ -392,29 +448,24 @@ const ItemDrawer = ({ item, isOpen, onClose, onSave, onDelete }) => {
 
         {/* ── Scrollable body ── */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 16px' }}>
-
-          {/* Consolidated bars */}
-          <div style={{
-            background: 'var(--color-white)', borderRadius: 'var(--radius-md)',
-            border: '1px solid var(--color-gray-200)',
-            padding: '16px 16px', marginBottom: 16,
-            display: 'flex', flexDirection: 'column', gap: 10,
-          }}>
-            <BudgetBar label="Solicitado" value={totalSolicitado} total={totalSolicitado} fillColor="var(--color-gray-400)" trackColor="var(--color-gray-200)" />
-            <BudgetBar label="Recebido"   value={totalRecebido}   total={totalSolicitado} fillColor="var(--color-blue)"    trackColor="var(--color-navy-20)" />
-            <BudgetBar label="Gasto"      value={totalGasto}      total={totalSolicitado} fillColor={totalSolicitado > 0 && totalGasto > totalSolicitado ? 'var(--color-warning)' : 'var(--color-success)'} trackColor="var(--color-gray-200)" />
-          </div>
-
-          {/* Month cards */}
-          {displayedEtapas.map((etapa, idx) => (
-            <MonthCard
-              key={etapa.id || idx}
-              etapa={etapa}
-              index={idx}
-              onChange={(field, value) => handleEtapaChange(idx, field, value)}
-              isReadOnly={!isLatest}
-            />
-          ))}
+          {(() => {
+            let cumPct = 0;
+            return displayedEtapas.map((etapa, idx) => {
+              const startPct = cumPct;
+              cumPct += Number(etapa.percentual) || 0;
+              return (
+                <MonthCard
+                  key={etapa.id || idx}
+                  etapa={etapa}
+                  index={idx}
+                  onChange={(field, value) => handleEtapaChange(idx, field, value)}
+                  isReadOnly={!isLatest}
+                  vizMode={vizMode}
+                  startPct={startPct}
+                />
+              );
+            });
+          })()}
         </div>
 
         {/* ── Footer ── */}
@@ -424,20 +475,42 @@ const ItemDrawer = ({ item, isOpen, onClose, onSave, onDelete }) => {
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           flexShrink: 0,
         }}>
-          <button
-            onClick={() => setConfirmDelete(true)}
-            style={{
-              background: 'transparent', border: '1px solid rgba(192,57,43,0.3)',
-              borderRadius: 'var(--radius-md)', cursor: 'pointer', padding: '8px 16px',
-              fontSize: 13, fontWeight: 600, color: 'var(--color-error)',
-              fontFamily: 'var(--font-display)', transition: 'all 0.15s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(192,57,43,0.07)'; e.currentTarget.style.borderColor = 'var(--color-error)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(192,57,43,0.3)'; }}
-          >
-            Apagar
-          </button>
+          {/* Left: Deletar + Editar */}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={() => setConfirmDelete(true)}
+              style={{
+                background: 'transparent', border: '1px solid rgba(192,57,43,0.3)',
+                borderRadius: 'var(--radius-md)', cursor: 'pointer', padding: '8px 16px',
+                fontSize: 13, fontWeight: 600, color: 'var(--color-error)',
+                fontFamily: 'var(--font-display)', transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(192,57,43,0.07)'; e.currentTarget.style.borderColor = 'var(--color-error)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(192,57,43,0.3)'; }}
+            >
+              Deletar
+            </button>
 
+            {isLatest && (
+              <button
+                onClick={() => setShowEdit(true)}
+                style={{
+                  background: 'transparent', border: '1px solid var(--color-gray-200)',
+                  borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                  padding: '8px 16px', fontSize: 13, fontWeight: 600,
+                  color: 'var(--color-navy-70)', fontFamily: 'var(--font-display)',
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  transition: 'border-color 0.15s, color 0.15s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-navy)'; e.currentTarget.style.color = 'var(--color-navy)'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-gray-200)'; e.currentTarget.style.color = 'var(--color-navy-70)'; }}
+              >
+                <IconEditSm /> Editar
+              </button>
+            )}
+          </div>
+
+          {/* Right: Cancelar + Salvar */}
           <div style={{ display: 'flex', gap: 8 }}>
             <button
               onClick={onClose}

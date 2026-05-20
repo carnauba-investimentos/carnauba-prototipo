@@ -6,7 +6,12 @@ Aplicação web de gerenciamento de cronograma e orçamento de projetos de inves
 
 - **Modos de visualização (Financeiro / Físico)** — alternados por botões posicionados ao lado do título "Cronograma" no cabeçalho; todos os componentes atualizam simultaneamente
   - **Financeiro** (paleta verde): barras de 3 segmentos mostrando Solicitado → Recebido → Gasto com rótulos em R$ abreviados; se Gasto > Recebido, a barra muda para paleta de alerta (âmbar)
-  - **Físico** (paleta azul): barras de 3 segmentos mostrando Planejado → Ativo (meses iniciados, não concluídos) → Realizado (etapas `feito=true`) com rótulos em %; se meses já encerrados têm etapas incompletas, a barra muda para paleta de alerta
+  - **Físico** (paleta azul): barras de 3 segmentos mostrando Trilho (100%) → Ativo (todos os meses iniciados) → Realizado (sobreposição escura, `Σ percentual × percentualRealizado / 100`); se algum mês encerrado tem `percentualRealizado < 100`, a barra muda para paleta de alerta (âmbar)
+- **DrawerHeader — componente paramétrico compartilhado** (`drawer-header.jsx`) — cabeçalho de 2 linhas usado por `ItemDrawer` e `MonthCard`; linha 1: círculo opcional + títulos + `statusDiv` alinhado à direita; linha 2: tags em pílulas; sub-componentes `ValueTag` (badge com rótulo + valor) e `SegBar` (barra de progresso com segmentos sobrepostos e rótulos flutuantes)
+- **ItemDrawer — modos FÍSICO / FINANCEIRO** — cabeçalho mostra 3 `ValueTag` (Gasto / Recebido / Solicitado) no modo Financeiro, ou barra de progresso agregada com segmentos Ativo + Realizado no modo Físico; corpo exibe campos de gasto (Financeiro) ou campo `percentualRealizado %` (Físico); rodapé reorganizado: Deletar + Editar à esquerda, Cancelar + Salvar à direita
+- **MonthCard — modos FÍSICO / FINANCEIRO** — cabeçalho usa `DrawerHeader` com `statusDiv` por modo; no modo Físico: barra cumulativa por mês (cada barra começa onde a anterior terminou); círculo mostra número ou ✓ conforme conclusão; cores de alerta (âmbar) quando mês encerrado e `percentualRealizado < 100`
+- **Campo `percentualRealizado`** — adicionado ao schema de etapa (0–100); no modo Físico, substitui `feito` como indicador de conclusão: `percentualRealizado >= 100` = etapa concluída; `feito` é ignorado em todos os cálculos Físicos
+- **Lógica de alerta unificada** — função `etapaShowsWarning(e)` exportada em `cronograma-itens.jsx` é a fonte única de verdade: `mês encerrado && percentualRealizado < 100`; usada por MonthCard, ItemDrawer, ItemCronograma, GrupoItensCronograma, GanttItemBar e GanttGroupBar
 - **ProgressCard — componente paramétrico unificado** — substitui todos os componentes de barra anteriores; recebe `segments[]` com cor e rótulo por camada, suporta modo expansível com corpo e rodapé, título editável por duplo-clique e drag-and-drop integrado
 - **Cronograma Gantt interativo** — visualização em meses com barras de progresso por grupo e por item, usando `ProgressCard` com segmentos por VM; alturas reduzidas e títulos posicionados fora dos cards para melhor legibilidade
 - **Título do item no Gantt** — cada `GanttItemCard` exibe o nome do item à esquerda das barras mensais (fora do card); as barras permanecem sempre alinhadas à grade de meses independentemente do título; `GanttGroupCard` exibe o nome do grupo na mesma posição
@@ -25,11 +30,15 @@ carnauba-prototipo/
 ├── app.jsx                  # App, Sidebar, GanttChart, GanttGroupCard, GanttItemCard,
 │                            #   GanttGroupBar, GanttItemBar, VmToggle, ícones, persistência
 ├── cronograma-itens.jsx     # ProgressCard, ItemCronograma, GrupoHeader, GrupoItensCronograma,
-│                            #   GroupFooter, helpers de VM (buildSegments, getRealizadoPct…),
-│                            #   constantes de cor (VM_NEUTRAL, VM_FINANCEIRO, VM_FISICO)
-├── item-modal.jsx           # Modal de edição de itens existentes e histórico de versões
+│                            #   GroupFooter, helpers de VM (buildSegments, getRealizadoPct,
+│                            #   getAtivoPct, getOverduePct, etapaIsDone, etapaShowsWarning…),
+│                            #   constantes de cor (VM_NEUTRAL, VM_FINANCEIRO, VM_FISICO, VM_WARNING)
+├── drawer-header.jsx        # DrawerHeader, ValueTag, SegBar — componentes de cabeçalho paramétrico
+├── item-modal.jsx           # ItemDrawer — edição de itens existentes, histórico de versões,
+│                            #   modos Físico e Financeiro
 ├── novo-item-drawer.jsx     # Drawer de criação de novos itens com formulário em etapas
-├── month-card.jsx           # Card de etapa mensal (modo edição e rastreamento)
+├── month-card.jsx           # MonthCard — card de etapa mensal com modos Físico e Financeiro,
+│                            #   barras cumulativas e lógica de alerta
 └── design-system/           # Submodule → carnauba-investimentos/carnauba-design-system
     ├── colors_and_type.css  # Tokens de cor, tipografia e espaçamento
     ├── fonts/               # Família tipográfica Aptos completa
@@ -130,10 +139,11 @@ Grupo
                 ├── orcamentoMaterial    — orçado: material (BRL)
                 ├── orcamentoMaoDeObra   — orçado: mão de obra (BRL)
                 ├── descricao            — descrição das atividades
-                ├── feito                — etapa concluída (boolean)
+                ├── feito                — etapa concluída (boolean, usado apenas no modo Financeiro)
                 ├── gastoMaterial        — realizado: material (BRL)
                 ├── gastoMaoDeObra       — realizado: mão de obra (BRL)
-                └── valorRecebido        — valor recebido nesta etapa (BRL)
+                ├── valorRecebido        — valor recebido nesta etapa (BRL)
+                └── percentualRealizado  — % das atividades realizadas no mês (0–100, modo Físico)
 ```
 
 ### Template (localStorage)

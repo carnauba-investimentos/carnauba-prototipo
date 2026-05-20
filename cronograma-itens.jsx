@@ -34,25 +34,34 @@ const VM_WARNING    = { complete: '#C08A2A', active: '#C8A05A', text1: '#704D0F'
 // ── Físico calculation helpers ────────────────────────────────────────
 // These call mesToStartISO from app.jsx — safe because components are rendered after app.jsx runs.
 
+// Single source of truth for FISICO "done" — mirrors MonthCard: only percentualRealizado >= 100
+// feito is ignored in FISICO mode; it was the pre-FISICO marker and is irrelevant here
+const etapaIsDone = (e) => (Number(e.percentualRealizado) || 0) >= 100;
+
+// Single source of truth for "should this etapa show warning" — mirrors MonthCard's showWarning.
+// Uses new Date(y, m, 0) exactly like MonthCard, not mesToEndISO.
+const etapaShowsWarning = (e) => {
+  if (!e.mes || etapaIsDone(e)) return false;
+  const [y, m] = e.mes.split('-').map(Number);
+  return new Date(y, m, 0) < new Date();
+};
+
 const getRealizadoPct = (version) =>
   Math.min(100, (version?.etapas || [])
-    .filter(e => e.feito)
-    .reduce((s, e) => s + (Number(e.percentual) || 0), 0));
+    .reduce((s, e) => s + (Number(e.percentual) || 0) * (Number(e.percentualRealizado) || 0) / 100, 0));
 
 const getAtivoPct = (version) => {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   return Math.min(100, (version?.etapas || [])
-    .filter(e => !e.feito && e.mes && new Date(mesToStartISO(e.mes) + 'T00:00:00') <= today)
+    .filter(e => e.mes && new Date(e.mes + '-01T00:00:00') <= today)
     .reduce((s, e) => s + (Number(e.percentual) || 0), 0));
 };
 
-// Months fully past (end < today) that are not done — drives warning color
-const getOverduePct = (version) => {
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  return Math.min(100, (version?.etapas || [])
-    .filter(e => !e.feito && e.mes && new Date(mesToEndISO(e.mes) + 'T00:00:00') < today)
+// Overdue % = sum of percentual for months where etapaShowsWarning is true
+const getOverduePct = (version) =>
+  Math.min(100, (version?.etapas || [])
+    .filter(e => etapaShowsWarning(e))
     .reduce((s, e) => s + (Number(e.percentual) || 0), 0));
-};
 
 const getGroupOverduePct = (grupo) => {
   if (!grupo.items.length) return 0;
@@ -102,12 +111,7 @@ const getGroupRecebido = (grupo) =>
 
 const hasOverdueEtapa = (version) => {
   if (!version?.etapas?.length) return false;
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  return version.etapas.some(e => {
-    if (!e.mes || e.feito) return false;
-    const end = new Date(mesToEndISO(e.mes) + 'T00:00:00');
-    return today > end;
-  });
+  return version.etapas.some(e => etapaShowsWarning(e));
 };
 
 const getGroupHasOverdue = (grupo) =>
@@ -131,15 +135,14 @@ const buildFinancialSegments = (solicitado, recebido, gasto) => {
 };
 
 const buildFisicoSegments = (realizadoPct, ativoPct, overduePct = 0, showTrackLabel = true) => {
-  const rp      = Math.max(0, realizadoPct || 0);
-  const ap      = Math.max(0, ativoPct || 0);
-  const warn    = (overduePct || 0) > 0;  // only past months (not current) drive warning
+  const rp      = Math.max(0, realizadoPct || 0);  // weighted realized — subset of ap
+  const ap      = Math.min(100, Math.max(0, ativoPct || 0));  // all started months (includes done)
+  const warn    = (overduePct || 0) > 0;
   const palette = warn ? VM_WARNING : VM_FISICO;
-  const seg1Pct = Math.min(100, rp + ap);
   return [
-    { pct: 100,     bg: VM_NEUTRAL.bg3,   label: showTrackLabel ? '100%' : null,                  labelColor: VM_NEUTRAL.text1 },
-    { pct: seg1Pct, bg: palette.active,   label: seg1Pct > 0 ? `${Math.round(seg1Pct)}%` : null, labelColor: palette.text2 },
-    { pct: rp,      bg: palette.complete, label: rp > 0 ? `${Math.round(rp)}%` : null,            labelColor: palette.text1 },
+    { pct: 100, bg: VM_NEUTRAL.bg3,   label: showTrackLabel ? '100%' : null,           labelColor: VM_NEUTRAL.text1 },
+    { pct: ap,  bg: palette.active,   label: ap > 0 ? `${Math.round(ap)}%` : null,     labelColor: palette.text2 },
+    { pct: rp,  bg: palette.complete, label: rp > 0 ? `${Math.round(rp)}%` : null,     labelColor: palette.text1 },
   ];
 };
 
@@ -550,6 +553,7 @@ Object.assign(window, {
   GrupoHeader, GroupFooter, GrupoItensCronograma, ItemCronograma,
   DragDropContext, Droppable, Draggable,
   buildSegments, buildFinancialSegments, buildFisicoSegments,
+  etapaIsDone, etapaShowsWarning,
   getRealizadoPct, getAtivoPct, getOverduePct, getGroupRealizadoPct, getGroupAtivoPct, getGroupOverduePct,
   VM_NEUTRAL, VM_FINANCEIRO, VM_FISICO, VM_WARNING,
 });

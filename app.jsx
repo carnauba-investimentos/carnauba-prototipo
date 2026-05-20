@@ -319,15 +319,15 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
     if (vizMode === 'fisico') {
       const etapaStart = new Date(mesToStartISO(etapa.mes) + 'T00:00:00');
       const etapaEnd   = new Date(mesToEndISO(etapa.mes) + 'T00:00:00');
-      const isDone     = etapa.feito;
-      const isActive   = !isDone && etapaStart <= today;
-      const warn       = !isDone && etapaEnd < today;  // only fully past months
+      const isStarted  = etapaStart <= today;
+      const warn       = etapaShowsWarning(etapa);
       const fp         = warn ? VM_WARNING : VM_FISICO;
       const pctLabel   = `${Number(etapa.percentual) || 0}%`;
+      const percReal   = Number(etapa.percentualRealizado) || 0;
       segments = [
-        { pct: 100,                          bg: VM_NEUTRAL.bg3, label: pctLabel,                              labelColor: VM_NEUTRAL.text1 },
-        { pct: isDone || isActive ? 100 : 0, bg: fp.active,      label: (isDone || isActive) ? pctLabel : null, labelColor: fp.text2 },
-        { pct: isDone ? 100 : 0,             bg: fp.complete,    label: isDone ? pctLabel : null,               labelColor: fp.text1 },
+        { pct: 100,              bg: VM_NEUTRAL.bg3,  label: pctLabel,                  labelColor: VM_NEUTRAL.text1 },
+        { pct: isStarted ? 100 : 0, bg: fp.active,   label: isStarted ? pctLabel : null, labelColor: fp.text2 },
+        { pct: isStarted ? percReal : 0, bg: fp.complete, label: isStarted && percReal > 0 ? `${Math.round(percReal)}%` : null, labelColor: fp.text1 },
       ];
     } else {
       const budget   = (Number(etapa.orcamentoMaterial) || 0) + (Number(etapa.orcamentoMaoDeObra) || 0);
@@ -360,24 +360,23 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
           hasEtapas = true;
           const pct = Number(e.percentual) || 0;
           totalPct += pct;
-          if (e.feito) realizadoPct += pct;
-          else if (mesStart <= today) {
+          realizadoPct += pct * (Number(e.percentualRealizado) || 0) / 100;
+          if (mesStart <= today) {
             ativoPct += pct;
-            if (mesEnd < today) overduePct += pct;
+            if (etapaShowsWarning(e)) overduePct += pct;
           }
         });
       });
       if (!hasEtapas) return null;
-      const norm    = totalPct > 0 ? 100 / totalPct : 0;
-      const rp      = Math.min(100, realizadoPct * norm);
-      const ap      = Math.min(100, ativoPct * norm);
-      const seg1Pct = Math.min(100, rp + ap);
-      const warn    = overduePct > 0;  // only fully past months
-      const fp      = warn ? VM_WARNING : VM_FISICO;
+      const norm = totalPct > 0 ? 100 / totalPct : 0;
+      const rp   = Math.min(100, realizadoPct * norm);
+      const ap   = Math.min(100, ativoPct * norm);
+      const warn = overduePct > 0;
+      const fp   = warn ? VM_WARNING : VM_FISICO;
       segments = [
-        { pct: 100,     bg: VM_NEUTRAL.bg3, label: `${Math.round(totalPct)}%`,                    labelColor: VM_NEUTRAL.text1 },
-        { pct: seg1Pct, bg: fp.active,      label: seg1Pct > 0 ? `${Math.round(seg1Pct)}%` : null, labelColor: fp.text2 },
-        { pct: rp,      bg: fp.complete,    label: rp > 0 ? `${Math.round(rp)}%` : null,           labelColor: fp.text1 },
+        { pct: 100, bg: VM_NEUTRAL.bg3, label: `${Math.round(totalPct)}%`,           labelColor: VM_NEUTRAL.text1 },
+        { pct: ap,  bg: fp.active,      label: ap > 0 ? `${Math.round(ap)}%` : null, labelColor: fp.text2 },
+        { pct: rp,  bg: fp.complete,    label: rp > 0 ? `${Math.round(rp)}%` : null, labelColor: fp.text1 },
       ];
     } else {
       let budget = 0, recebidoSum = 0, gasto = 0;
@@ -934,7 +933,7 @@ const App = () => {
       </div>
 
       {editingItem
-        ? <ItemModal item={editingItem} isOpen={modalOpen} onClose={() => setModalOpen(false)} onSave={handleSave} onDelete={handleDeleteItem} />
+        ? <ItemModal item={editingItem} isOpen={modalOpen} onClose={() => setModalOpen(false)} onSave={handleSave} onDelete={handleDeleteItem} vizMode={vizMode} />
         : <NovoItemDrawer isOpen={modalOpen} onClose={() => setModalOpen(false)} onSave={handleSave} />
       }
     </div>

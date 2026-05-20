@@ -22,7 +22,7 @@ const niGenEtapas = (start, end, existing = []) => {
       id: `e${Date.now()}${Math.random().toString(36).slice(2,5)}`,
       mes, percentual: '', orcamentoMaterial: '', orcamentoMaoDeObra: '',
       descricao: '', feito: false, gastoMaterial: '', gastoMaoDeObra: '',
-      valorRecebido: '',
+      valorRecebido: '', percentualRealizado: 0,
     });
     if (++m > 12) { m = 1; y++; }
   }
