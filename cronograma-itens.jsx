@@ -28,7 +28,8 @@ const VM_NEUTRAL = {
   text1: '#8F99A2', text2: '#4E708E', text3: '#1E1E1E',
 };
 const VM_FINANCEIRO = { complete: '#389579', active: '#92B7AD', text1: '#255A4A', text2: '#0A4231' };
-const VM_FISICO     = { complete: '#3289C0', active: '#8BBBD6', text: '#064267' };
+const VM_FISICO     = { complete: '#3289C0', active: '#8BBBD6', text1: '#064267', text2: '#3C7294' };
+const VM_WARNING    = { complete: '#C08A2A', active: '#C8A05A', text1: '#704D0F', text2: '#704D0F' };
 
 // ── Físico calculation helpers ────────────────────────────────────────
 // These call mesToStartISO from app.jsx — safe because components are rendered after app.jsx runs.
@@ -43,6 +44,23 @@ const getAtivoPct = (version) => {
   return Math.min(100, (version?.etapas || [])
     .filter(e => !e.feito && e.mes && new Date(mesToStartISO(e.mes) + 'T00:00:00') <= today)
     .reduce((s, e) => s + (Number(e.percentual) || 0), 0));
+};
+
+// Months fully past (end < today) that are not done — drives warning color
+const getOverduePct = (version) => {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  return Math.min(100, (version?.etapas || [])
+    .filter(e => !e.feito && e.mes && new Date(mesToEndISO(e.mes) + 'T00:00:00') < today)
+    .reduce((s, e) => s + (Number(e.percentual) || 0), 0));
+};
+
+const getGroupOverduePct = (grupo) => {
+  if (!grupo.items.length) return 0;
+  const sum = grupo.items.reduce((acc, item) => {
+    const latest = item.versions[item.versions.length - 1];
+    return acc + getOverduePct(latest);
+  }, 0);
+  return Math.round(sum / grupo.items.length);
 };
 
 const getGroupRealizadoPct = (grupo) => {
@@ -101,29 +119,33 @@ const getGroupHasOverdue = (grupo) =>
 
 const buildFinancialSegments = (solicitado, recebido, gasto) => {
   const s = solicitado || 0, r = recebido || 0, g = gasto || 0;
-  const recPct = s > 0 ? Math.min(100, r / s * 100) : 0;
-  const gasPct = s > 0 ? Math.min(100, g / s * 100) : 0;
+  const warn    = g > r;
+  const palette = warn ? VM_WARNING : VM_FINANCEIRO;
+  const recPct  = s > 0 ? Math.min(100, r / s * 100) : 0;
+  const gasPct  = s > 0 ? Math.min(100, g / s * 100) : 0;
   return [
-    { pct: 100,    bg: VM_NEUTRAL.bg3,       label: s > 0 ? fmtK(s) : null, labelColor: VM_NEUTRAL.text1 },
-    { pct: recPct, bg: VM_FINANCEIRO.active,  label: r > 0 ? fmtK(r) : null, labelColor: VM_FINANCEIRO.text1 },
-    { pct: gasPct, bg: VM_FINANCEIRO.complete,label: g > 0 ? fmtK(g) : null, labelColor: VM_FINANCEIRO.text2 },
+    { pct: 100,    bg: VM_NEUTRAL.bg3,    label: s > 0 ? fmtK(s) : null, labelColor: VM_NEUTRAL.text1 },
+    { pct: recPct, bg: palette.active,    label: r > 0 ? fmtK(r) : null, labelColor: warn ? VM_WARNING.text1 : VM_FINANCEIRO.text1 },
+    { pct: gasPct, bg: palette.complete,  label: g > 0 ? fmtK(g) : null, labelColor: warn ? VM_WARNING.text1 : VM_FINANCEIRO.text2 },
   ];
 };
 
-const buildFisicoSegments = (realizadoPct, ativoPct) => {
-  const rp = Math.max(0, realizadoPct || 0);
-  const ap = Math.max(0, ativoPct || 0);
+const buildFisicoSegments = (realizadoPct, ativoPct, overduePct = 0, showTrackLabel = true) => {
+  const rp      = Math.max(0, realizadoPct || 0);
+  const ap      = Math.max(0, ativoPct || 0);
+  const warn    = (overduePct || 0) > 0;  // only past months (not current) drive warning
+  const palette = warn ? VM_WARNING : VM_FISICO;
   const seg1Pct = Math.min(100, rp + ap);
   return [
-    { pct: 100,     bg: VM_NEUTRAL.bg3,      label: '100%', labelColor: VM_NEUTRAL.text1 },
-    { pct: seg1Pct, bg: VM_FISICO.active,    label: seg1Pct > 0 ? `${Math.round(seg1Pct)}%` : null, labelColor: VM_FISICO.text },
-    { pct: rp,      bg: VM_FISICO.complete,  label: rp > 0 ? `${Math.round(rp)}%` : null, labelColor: VM_FISICO.text },
+    { pct: 100,     bg: VM_NEUTRAL.bg3,   label: showTrackLabel ? '100%' : null,                  labelColor: VM_NEUTRAL.text1 },
+    { pct: seg1Pct, bg: palette.active,   label: seg1Pct > 0 ? `${Math.round(seg1Pct)}%` : null, labelColor: palette.text2 },
+    { pct: rp,      bg: palette.complete, label: rp > 0 ? `${Math.round(rp)}%` : null,            labelColor: palette.text1 },
   ];
 };
 
-const buildSegments = (vizMode, { solicitado, recebido, gasto, realizadoPct, ativoPct }) =>
+const buildSegments = (vizMode, { solicitado, recebido, gasto, realizadoPct, ativoPct, overduePct }) =>
   vizMode === 'fisico'
-    ? buildFisicoSegments(realizadoPct || 0, ativoPct || 0)
+    ? buildFisicoSegments(realizadoPct || 0, ativoPct || 0, overduePct || 0, false)
     : buildFinancialSegments(solicitado || 0, recebido || 0, gasto || 0);
 
 // ── ProgressCard — unified parametric card/bar component ──────────────
@@ -313,8 +335,9 @@ const ItemCronograma = ({ item, dragHandleProps, onClick, vizMode = 'financeiro'
   const recebido   = latest.etapas.reduce((s, e) => s + (Number(e.valorRecebido) || 0), 0);
   const realizado  = getRealizadoPct(latest);
   const ativo      = getAtivoPct(latest);
+  const overdue    = getOverduePct(latest);
 
-  const segments = buildSegments(vizMode, { solicitado, recebido, gasto, realizadoPct: realizado, ativoPct: ativo });
+  const segments = buildSegments(vizMode, { solicitado, recebido, gasto, realizadoPct: realizado, ativoPct: ativo, overduePct: overdue });
 
   return (
     <ProgressCard
@@ -338,8 +361,9 @@ const GrupoHeader = ({ grupo, dragHandleProps, onToggle, onRenameGroup, vizMode 
   const recebido   = getGroupRecebido(grupo);
   const realizado  = getGroupRealizadoPct(grupo);
   const ativo      = getGroupAtivoPct(grupo);
+  const overdue    = getGroupOverduePct(grupo);
 
-  const segments = buildSegments(vizMode, { solicitado, recebido, gasto, realizadoPct: realizado, ativoPct: ativo });
+  const segments = buildSegments(vizMode, { solicitado, recebido, gasto, realizadoPct: realizado, ativoPct: ativo, overduePct: overdue });
 
   return (
     <ProgressCard
@@ -415,8 +439,9 @@ const GrupoItensCronograma = ({ grupo, dragHandleProps, onToggle, onItemClick, o
   const recebido   = getGroupRecebido(grupo);
   const realizado  = getGroupRealizadoPct(grupo);
   const ativo      = getGroupAtivoPct(grupo);
+  const overdue    = getGroupOverduePct(grupo);
 
-  const segments = buildSegments(vizMode, { solicitado, recebido, gasto, realizadoPct: realizado, ativoPct: ativo });
+  const segments = buildSegments(vizMode, { solicitado, recebido, gasto, realizadoPct: realizado, ativoPct: ativo, overduePct: overdue });
 
   const body = (
     <Droppable droppableId={grupo.id} type="ITEM">
@@ -525,6 +550,6 @@ Object.assign(window, {
   GrupoHeader, GroupFooter, GrupoItensCronograma, ItemCronograma,
   DragDropContext, Droppable, Draggable,
   buildSegments, buildFinancialSegments, buildFisicoSegments,
-  getRealizadoPct, getAtivoPct, getGroupRealizadoPct, getGroupAtivoPct,
-  VM_NEUTRAL, VM_FINANCEIRO, VM_FISICO,
+  getRealizadoPct, getAtivoPct, getOverduePct, getGroupRealizadoPct, getGroupAtivoPct, getGroupOverduePct,
+  VM_NEUTRAL, VM_FINANCEIRO, VM_FISICO, VM_WARNING,
 });

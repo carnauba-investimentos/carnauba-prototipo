@@ -4,12 +4,12 @@ Aplicação web de gerenciamento de cronograma e orçamento de projetos de inves
 
 ## Funcionalidades
 
-- **Modos de visualização (Financeiro / Físico)** — alternados por um controle segmentado na barra superior; todos os componentes atualizam simultaneamente
-  - **Financeiro** (paleta verde): barras de 3 segmentos mostrando Solicitado → Recebido → Gasto com rótulos em R$ abreviados
-  - **Físico** (paleta azul): barras de 3 segmentos mostrando Planejado → Ativo (meses iniciados, não concluídos) → Realizado (etapas `feito=true`) com rótulos em %
+- **Modos de visualização (Financeiro / Físico)** — alternados por botões posicionados ao lado do título "Cronograma" no cabeçalho; todos os componentes atualizam simultaneamente
+  - **Financeiro** (paleta verde): barras de 3 segmentos mostrando Solicitado → Recebido → Gasto com rótulos em R$ abreviados; se Gasto > Recebido, a barra muda para paleta de alerta (âmbar)
+  - **Físico** (paleta azul): barras de 3 segmentos mostrando Planejado → Ativo (meses iniciados, não concluídos) → Realizado (etapas `feito=true`) com rótulos em %; se meses já encerrados têm etapas incompletas, a barra muda para paleta de alerta
 - **ProgressCard — componente paramétrico unificado** — substitui todos os componentes de barra anteriores; recebe `segments[]` com cor e rótulo por camada, suporta modo expansível com corpo e rodapé, título editável por duplo-clique e drag-and-drop integrado
-- **Cronograma Gantt interativo** — visualização em meses com barras de progresso por grupo e por item, usando `ProgressCard` com segmentos por VM
-- **Título do item no card Gantt** — cada `GanttItemCard` exibe o nome e versão do item à esquerda das barras mensais; as barras permanecem sempre alinhadas à grade de meses independentemente do título
+- **Cronograma Gantt interativo** — visualização em meses com barras de progresso por grupo e por item, usando `ProgressCard` com segmentos por VM; alturas reduzidas e títulos posicionados fora dos cards para melhor legibilidade
+- **Título do item no Gantt** — cada `GanttItemCard` exibe o nome do item à esquerda das barras mensais (fora do card); as barras permanecem sempre alinhadas à grade de meses independentemente do título; `GanttGroupCard` exibe o nome do grupo na mesma posição
 - **Grupos de itens** — itens organizados em grupos recolhíveis com drag-and-drop para reordenação
 - **Controle de versões** — cada edição pode gerar uma nova versão do item, preservando o histórico completo
 - **Rastreamento financeiro** — orçamento previsto (material + mão de obra) vs. realizado por etapa mensal
@@ -60,8 +60,9 @@ As paletas de VM são definidas em `cronograma-itens.jsx` como constantes export
 | Constante | Uso | Cor principal |
 |---|---|---|
 | `VM_FINANCEIRO` | Modo Financeiro (verde) | `#389579` (gasto), `#92B7AD` (recebido) |
-| `VM_FISICO` | Modo Físico (azul) | `#3289C0` (realizado), `#8BBBD6` (ativo) |
+| `VM_FISICO` | Modo Físico (azul) | `#3289C0` (realizado), `#8BBBD6` (ativo/planejado) |
 | `VM_NEUTRAL` | Neutros compartilhados | `#BDC6D6` (trilho), `#DFE4EA` (corpo), `#EDF1F6` (fundo) |
+| `VM_WARNING` | Alerta (âmbar) | `#C08A2A` (realizado/gasto), `#C8A05A` (ativo/recebido) |
 
 ## Como clonar (nova máquina)
 
