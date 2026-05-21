@@ -300,24 +300,25 @@ const ItemDrawer = ({ item, isOpen, onClose, onSave, onDelete, vizMode = 'financ
   const fisicoOverduePct = Math.min(100, displayedEtapas
     .filter(e => etapaShowsWarning(e))
     .reduce((s, e) => s + (Number(e.percentual) || 0), 0));
+  const fisicoOverdueRealizadoPct = Math.min(100, displayedEtapas
+    .filter(e => etapaShowsWarning(e))
+    .reduce((s, e) => s + (Number(e.percentual) || 0) * (Number(e.percentualRealizado) || 0) / 100, 0));
   const _today = new Date(); _today.setHours(0, 0, 0, 0);
   const fisicoAtivoPct = Math.min(100, displayedEtapas
     .filter(e => e.mes && new Date(e.mes + '-01T00:00:00') <= _today)
     .reduce((s, e) => s + (Number(e.percentual) || 0), 0));
-  const fisicoWarn     = fisicoOverduePct > 0;
-  const fisicoPalette  = fisicoWarn ? VM_WARNING : VM_FISICO;
-  // Active label: when overdue show unrealized portion (ativo - realizado), not full ativo
-  const fisicoActiveLabel = fisicoWarn
-    ? Math.max(0, Math.round(fisicoAtivoPct - fisicoRealizadoPct))
-    : Math.round(fisicoAtivoPct);
+
+  const fisicoOverdueUnrealized    = Math.max(0, fisicoOverduePct - fisicoOverdueRealizadoPct);
+  const fisicoNonOverdueUnrealized = Math.max(0, (fisicoAtivoPct - fisicoOverduePct) - (fisicoRealizadoPct - fisicoOverdueRealizadoPct));
 
   const headerFisicoStatusDiv = (
     <div style={{ minWidth: 220 }}>
       <SegBar
         segments={[
-          { pct: 100,               bg: VM_NEUTRAL.bg3,      label: null,                                                                         labelColor: VM_NEUTRAL.text1 },
-          { pct: fisicoAtivoPct,    bg: fisicoPalette.active, label: fisicoAtivoPct > 0 ? `${fisicoActiveLabel}%` : null,                          labelColor: fisicoPalette.text2 },
-          { pct: fisicoRealizadoPct, bg: VM_FISICO.complete,  label: fisicoRealizadoPct > 0 ? `${Math.round(fisicoRealizadoPct)}%` : null,          labelColor: VM_FISICO.text1 },
+          { pct: 100,                       left: 0,                                                  bg: VM_NEUTRAL.bg3,    label: null,                                                                              labelColor: VM_NEUTRAL.text1 },
+          { pct: fisicoRealizadoPct,         left: 0,                                                  bg: VM_FISICO.complete, label: fisicoRealizadoPct > 0 ? `${Math.round(fisicoRealizadoPct)}%` : null,             labelColor: VM_FISICO.text1 },
+          { pct: fisicoOverdueUnrealized,    left: fisicoRealizadoPct,                                 bg: VM_WARNING.active, label: fisicoOverdueUnrealized > 0 ? `${Math.round(fisicoOverdueUnrealized)}%` : null,    labelColor: VM_WARNING.text2 },
+          { pct: fisicoNonOverdueUnrealized, left: fisicoRealizadoPct + fisicoOverdueUnrealized,       bg: VM_FISICO.active,  label: fisicoNonOverdueUnrealized > 0 ? `${Math.round(fisicoNonOverdueUnrealized)}%` : null, labelColor: VM_FISICO.text2 },
         ]}
         height={28}
         borderRadius={8}

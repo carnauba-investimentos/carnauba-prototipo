@@ -352,24 +352,25 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
 
     let segments;
     if (vizMode === 'fisico') {
-      const etapaStart = new Date(mesToStartISO(etapa.mes) + 'T00:00:00');
-      const isStarted  = etapaStart <= today;
-      const warn       = etapaShowsWarning(etapa);
-      const fp         = warn ? VM_WARNING : VM_FISICO;
-      const pct        = Number(etapa.percentual) || 0;
-      const percReal   = Number(etapa.percentualRealizado) || 0;
-      const pctLabel   = `${pct}%`;
-      const realizedAbs = pct * percReal / 100;
-      const activeLabel = isStarted ? (warn ? Math.max(0, Math.round(pct - realizedAbs)) : pct) : null;
+      const etapaStart   = new Date(mesToStartISO(etapa.mes) + 'T00:00:00');
+      const isStarted    = etapaStart <= today;
+      const warn         = etapaShowsWarning(etapa);
+      const pct          = Number(etapa.percentual) || 0;
+      const percReal     = Number(etapa.percentualRealizado) || 0;
+      const pctLabel     = `${pct}%`;
+      const realizedAbs  = pct * percReal / 100;
+      const unrealizedAbs = Math.max(0, pct - realizedAbs);
+      const unrealizedBg    = warn ? VM_WARNING.active : VM_FISICO.active;
+      const unrealizedColor = warn ? VM_WARNING.text2 : VM_FISICO.text2;
       segments = [
-        { pct: 100,                       bg: VM_NEUTRAL.bg3,     label: pctLabel,                                                               labelColor: VM_NEUTRAL.text1 },
-        { pct: isStarted ? 100 : 0,       bg: fp.active,          label: activeLabel != null ? `${activeLabel}%` : null,                         labelColor: fp.text2 },
-        { pct: isStarted ? percReal : 0,  bg: VM_FISICO.complete, label: isStarted && percReal > 0 ? `${Math.round(realizedAbs)}%` : null,       labelColor: VM_FISICO.text1 },
+        { pct: 100,                              left: 0,           bg: VM_NEUTRAL.bg3,    label: pctLabel,                                                              labelColor: VM_NEUTRAL.text1 },
+        { pct: realizedAbs,                      left: 0,           bg: VM_FISICO.complete, label: realizedAbs > 0 ? `${Math.round(realizedAbs)}%` : null,               labelColor: VM_FISICO.text1 },
+        { pct: isStarted ? unrealizedAbs : 0,   left: realizedAbs, bg: unrealizedBg,       label: (isStarted && unrealizedAbs > 0) ? `${Math.round(unrealizedAbs)}%` : null, labelColor: unrealizedColor },
       ];
       const futuro    = isStarted ? 0 : pct;
-      const planejado = isStarted ? pct : 0;
-      const realizado = isStarted ? pct * percReal / 100 : 0;
-      const atraso    = warn ? Math.max(0, pct - realizado) : 0;
+      const planejado = isStarted ? (warn ? 0 : unrealizedAbs) : 0;
+      const realizado = realizedAbs;
+      const atraso    = warn ? unrealizedAbs : 0;
       return (
         <div style={{ position: 'absolute', left: barLeft, width: barWidth, height: GANTT_BAR_H, top: '50%', transform: 'translateY(-50%)' }}>
           <FisicoTooltip futuro={futuro} planejado={planejado} realizado={realizado} atraso={atraso} wrapperStyle={{ height: GANTT_BAR_H }}>
@@ -405,7 +406,7 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
     let segments;
 
     if (vizMode === 'fisico') {
-      let totalPct = 0, realizadoPct = 0, ativoPct = 0, overduePct = 0;
+      let totalPct = 0, realizadoPct = 0, ativoPct = 0, overduePct = 0, overdueRealizedPct = 0;
       const numItems = grupo.items.length || 1;
       const mesStart = new Date(mesToStartISO(mes) + 'T00:00:00');
       grupo.items.forEach(item => {
@@ -418,7 +419,10 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
           realizadoPct += pct * (Number(e.percentualRealizado) || 0) / 100;
           if (mesStart <= today) {
             ativoPct += pct;
-            if (etapaShowsWarning(e)) overduePct += pct;
+            if (etapaShowsWarning(e)) {
+              overduePct += pct;
+              overdueRealizedPct += pct * (Number(e.percentualRealizado) || 0) / 100;
+            }
           }
         });
       });
@@ -426,25 +430,31 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
       const norm = totalPct > 0 ? 100 / totalPct : 0;
       const rp   = Math.min(100, realizadoPct * norm);
       const ap   = Math.min(100, ativoPct * norm);
+      const op   = Math.min(100, overduePct * norm);
+      const orp  = Math.min(op, overdueRealizedPct * norm);
+
+      const overdueUnrealized    = Math.max(0, op - orp);
+      const nonOverdueUnrealized = Math.max(0, (ap - op) - (rp - orp));
       const futuroPct = Math.max(0, 100 - ap);
-      const warn = overduePct > 0;
-      const fp   = warn ? VM_WARNING : VM_FISICO;
-      const atrasoPct = Math.max(0, Math.min(100, overduePct * norm) - rp);
+      const atrasoPct = overdueUnrealized;
+
       // Average labels: divide accumulated sums by item count so months sum to 100%
-      const avgTotal    = Math.round(totalPct / numItems);
-      const avgAtivo    = Math.round(ativoPct / numItems);
+      const avgTotal     = Math.round(totalPct / numItems);
       const avgRealizado = Math.round(realizadoPct / numItems);
-      const apLabel     = warn ? Math.max(0, avgAtivo - avgRealizado) : avgAtivo;
+      const avgOverdueUnrealized    = Math.max(0, Math.round((overduePct - overdueRealizedPct) / numItems));
+      const avgNonOverdueUnrealized = Math.max(0, Math.round((ativoPct - overduePct - (realizadoPct - overdueRealizedPct)) / numItems));
+
       segments = [
-        { pct: 100, bg: VM_NEUTRAL.bg3,    label: `${avgTotal}%`,                         labelColor: VM_NEUTRAL.text1 },
-        { pct: ap,  bg: fp.active,          label: ap > 0 ? `${apLabel}%` : null,          labelColor: fp.text2 },
-        { pct: rp,  bg: VM_FISICO.complete, label: rp > 0 ? `${avgRealizado}%` : null,     labelColor: VM_FISICO.text1 },
+        { pct: 100,                  left: 0,                        bg: VM_NEUTRAL.bg3,    label: `${avgTotal}%`,                                                    labelColor: VM_NEUTRAL.text1 },
+        { pct: rp,                   left: 0,                        bg: VM_FISICO.complete, label: rp > 0 ? `${avgRealizado}%` : null,                                labelColor: VM_FISICO.text1 },
+        { pct: overdueUnrealized,    left: rp,                       bg: VM_WARNING.active, label: overdueUnrealized > 0 ? `${avgOverdueUnrealized}%` : null,          labelColor: VM_WARNING.text2 },
+        { pct: nonOverdueUnrealized, left: rp + overdueUnrealized,   bg: VM_FISICO.active,  label: nonOverdueUnrealized > 0 ? `${avgNonOverdueUnrealized}%` : null,   labelColor: VM_FISICO.text2 },
       ];
       const barLeft = col.x - groupOriginX + CARD_PAD + 8;
       const barWidth = col.width - 16;
       return (
         <div style={{ position: 'absolute', left: barLeft, width: barWidth, height: GANTT_BAR_H, top: '50%', transform: 'translateY(-50%)' }}>
-          <FisicoTooltip futuro={futuroPct} planejado={ap} realizado={rp} atraso={atrasoPct} wrapperStyle={{ height: GANTT_BAR_H }}>
+          <FisicoTooltip futuro={futuroPct} planejado={nonOverdueUnrealized} realizado={rp} atraso={atrasoPct} wrapperStyle={{ height: GANTT_BAR_H }}>
             <div style={{ height: GANTT_BAR_H, borderRadius: 8, overflow: 'hidden' }}>
               <ProgressCard segments={segments} minHeight={GANTT_BAR_H} borderRadius={8} />
             </div>

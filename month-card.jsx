@@ -216,32 +216,27 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly, vizMode = 'financeiro',
 
   // ── FISICO StatusDiv: compact 3-segment progress bar ──────────────────────
   const perc    = Number(etapa.percentual) || 0;
-  const seg2Pct = perc;
-  const seg3Pct = perc * percReal / 100;
+  const seg3Pct = perc * percReal / 100;              // realized contribution within this etapa's scope
+  const seg4Pct = Math.max(0, perc - seg3Pct);        // unrealized contribution
 
   // Segment colors: active/complete months → VM_FISICO; incomplete past → warning; future → neutral
-  let seg2Bg, seg2LabelColor, seg3Bg, seg3LabelColor;
+  let seg2Bg, seg2LabelColor, seg3LabelColor;
   if (fisicoComplete || isCurrentMonth) {
-    seg2Bg = VM_FISICO.active;    seg2LabelColor = VM_FISICO.text2;
-    seg3Bg = VM_FISICO.complete;  seg3LabelColor = VM_FISICO.text1;
+    seg2Bg = VM_FISICO.active;   seg2LabelColor = VM_FISICO.text2;
+    seg3LabelColor = VM_FISICO.text1;
   } else if (showWarning) {
-    // past month, not 100% realized — active segment warns, realized stays blue
-    seg2Bg = VM_WARNING.active;    seg2LabelColor = VM_WARNING.text1;
-    seg3Bg = VM_FISICO.complete;   seg3LabelColor = VM_FISICO.text1;
+    seg2Bg = VM_WARNING.active;  seg2LabelColor = VM_WARNING.text1;
+    seg3LabelColor = VM_FISICO.text1;
   } else {
     // future months: neutral planned, blue realized
-    seg2Bg = VM_NEUTRAL.text1;   seg2LabelColor = VM_NEUTRAL.text2;
-    seg3Bg = VM_FISICO.complete; seg3LabelColor = VM_FISICO.text1;
+    seg2Bg = VM_NEUTRAL.text1;  seg2LabelColor = VM_NEUTRAL.text2;
+    seg3LabelColor = VM_FISICO.text1;
   }
 
-  const seg2Label = showWarning
-    ? (seg2Pct > 0 ? `${Math.max(0, Math.round(seg2Pct - seg3Pct))}%` : null)
-    : (seg2Pct > 0 ? `${Math.round(seg2Pct)}%` : null);
-
   const fisicoSegments = [
-    { pct: 100,     left: 0,        bg: VM_NEUTRAL.bg3, label: null,       labelColor: VM_NEUTRAL.text1 },
-    { pct: seg2Pct, left: startPct, bg: seg2Bg,         label: seg2Label,  labelColor: seg2LabelColor },
-    { pct: seg3Pct, left: startPct, bg: seg3Bg,         label: seg3Pct > 0 ? `${Math.round(seg3Pct)}%` : null, labelColor: seg3LabelColor },
+    { pct: 100,     left: 0,                   bg: VM_NEUTRAL.bg3,    label: null,                                                            labelColor: VM_NEUTRAL.text1 },
+    { pct: seg3Pct, left: startPct,            bg: VM_FISICO.complete, label: seg3Pct > 0 ? `${Math.round(seg3Pct)}%` : null,                 labelColor: seg3LabelColor },
+    { pct: seg4Pct, left: startPct + seg3Pct,  bg: seg2Bg,            label: seg4Pct > 0 ? `${Math.round(seg4Pct)}%` : null,                 labelColor: seg2LabelColor },
   ];
 
   const fisicoStatusDiv = (
