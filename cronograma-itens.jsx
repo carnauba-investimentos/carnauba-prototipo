@@ -333,6 +333,7 @@ const ProgressCard = ({
 
 // ── ItemCronograma ────────────────────────────────────────────────────
 const ItemCronograma = ({ item, dragHandleProps, onClick, vizMode = 'financeiro', isDragging = false }) => {
+  const [hovered, setHovered] = useStateCi(false);
   const latest   = item.versions[item.versions.length - 1];
   const solicitado = getTotalBudget(latest);
   const gasto      = getTotalSpent(latest);
@@ -344,19 +345,30 @@ const ItemCronograma = ({ item, dragHandleProps, onClick, vizMode = 'financeiro'
   const segments = buildSegments(vizMode, { solicitado, recebido, gasto, realizadoPct: realizado, ativoPct: ativo, overduePct: overdue });
 
   return (
-    <Tooltip solicitado={solicitado} recebido={recebido} gasto={gasto} warn={gasto > recebido} disabled={vizMode !== 'financeiro' || isDragging}>
-      <ProgressCard
-        minHeight={50}
-        borderRadius={10}
-        title={latest?.nome || 'Item sem nome'}
-        titleSize={14}
-        titleColor={VM_NEUTRAL.text3}
-        segments={segments}
-        onClick={() => onClick(item)}
-        dragHandleProps={dragHandleProps}
-        dragging={isDragging}
-      />
-    </Tooltip>
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        transform: hovered && !isDragging ? 'translate(0.75px, -0.75px)' : 'none',
+        boxShadow: hovered && !isDragging ? '-1px 1px 3px rgba(0,0,0,0.25)' : 'none',
+        borderRadius: 10,
+        transition: 'transform 0.15s ease, box-shadow 0.01s ease',
+      }}
+    >
+      <Tooltip solicitado={solicitado} recebido={recebido} gasto={gasto} warn={gasto > recebido} disabled={vizMode !== 'financeiro' || isDragging}>
+        <ProgressCard
+          minHeight={50}
+          borderRadius={10}
+          title={latest?.nome || 'Item sem nome'}
+          titleSize={14}
+          titleColor={VM_NEUTRAL.text3}
+          segments={segments}
+          onClick={() => onClick(item)}
+          dragHandleProps={dragHandleProps}
+          dragging={isDragging}
+        />
+      </Tooltip>
+    </div>
   );
 };
 
@@ -373,22 +385,24 @@ const GrupoHeader = ({ grupo, dragHandleProps, onToggle, onRenameGroup, vizMode 
   const segments = buildSegments(vizMode, { solicitado, recebido, gasto, realizadoPct: realizado, ativoPct: ativo, overduePct: overdue });
 
   return (
-    <Tooltip solicitado={solicitado} recebido={recebido} gasto={gasto} warn={gasto > recebido} disabled={vizMode !== 'financeiro' || isDragging}>
-      <ProgressCard
-        minHeight={56}
-        borderRadius={10}
-        title={grupo.nome}
-        titleSize={15}
-        titleColor={VM_NEUTRAL.text3}
-        onTitleEdit={onRenameGroup}
-        expandable
-        collapsed={grupo.collapsed}
-        onToggle={onToggle}
-        segments={segments}
-        dragHandleProps={dragHandleProps}
-        dragging={isDragging}
-      />
-    </Tooltip>
+    <div style={{ height: '100%' }} onClick={onToggle}>
+      <Tooltip solicitado={solicitado} recebido={recebido} gasto={gasto} warn={gasto > recebido} disabled={vizMode !== 'financeiro' || isDragging}>
+        <ProgressCard
+          minHeight={56}
+          borderRadius={10}
+          title={grupo.nome}
+          titleSize={15}
+          titleColor={VM_NEUTRAL.text3}
+          onTitleEdit={onRenameGroup}
+          expandable
+          collapsed={grupo.collapsed}
+          onToggle={onToggle}
+          segments={segments}
+          dragHandleProps={dragHandleProps}
+          dragging={isDragging}
+        />
+      </Tooltip>
+    </div>
   );
 };
 
