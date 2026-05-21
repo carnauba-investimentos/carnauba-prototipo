@@ -357,13 +357,12 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
       const warn         = etapaShowsWarning(etapa);
       const pct          = Number(etapa.percentual) || 0;
       const percReal     = Number(etapa.percentualRealizado) || 0;
-      const pctLabel     = `${pct}%`;
       const realizedAbs  = pct * percReal / 100;
       const unrealizedAbs = Math.max(0, pct - realizedAbs);
       const unrealizedBg    = warn ? VM_WARNING.active : VM_FISICO.active;
       const unrealizedColor = warn ? VM_WARNING.text2 : VM_FISICO.text2;
       segments = [
-        { pct: 100,                              left: 0,           bg: VM_NEUTRAL.bg3,    label: pctLabel,                                                              labelColor: VM_NEUTRAL.text1 },
+        { pct: 100,                              left: 0,           bg: VM_NEUTRAL.bg3,    label: null,                                                                   labelColor: VM_NEUTRAL.text1 },
         { pct: realizedAbs,                      left: 0,           bg: VM_FISICO.complete, label: realizedAbs > 0 ? `${Math.round(realizedAbs)}%` : null,               labelColor: VM_FISICO.text1 },
         { pct: isStarted ? unrealizedAbs : 0,   left: realizedAbs, bg: unrealizedBg,       label: (isStarted && unrealizedAbs > 0) ? `${Math.round(unrealizedAbs)}%` : null, labelColor: unrealizedColor },
       ];
@@ -439,13 +438,12 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
       const atrasoPct = overdueUnrealized;
 
       // Average labels: divide accumulated sums by item count so months sum to 100%
-      const avgTotal     = Math.round(totalPct / numItems);
       const avgRealizado = Math.round(realizadoPct / numItems);
       const avgOverdueUnrealized    = Math.max(0, Math.round((overduePct - overdueRealizedPct) / numItems));
       const avgNonOverdueUnrealized = Math.max(0, Math.round((ativoPct - overduePct - (realizadoPct - overdueRealizedPct)) / numItems));
 
       segments = [
-        { pct: 100,                  left: 0,                        bg: VM_NEUTRAL.bg3,    label: `${avgTotal}%`,                                                    labelColor: VM_NEUTRAL.text1 },
+        { pct: 100,                  left: 0,                        bg: VM_NEUTRAL.bg3,    label: null,                                                              labelColor: VM_NEUTRAL.text1 },
         { pct: rp,                   left: 0,                        bg: VM_FISICO.complete, label: rp > 0 ? `${avgRealizado}%` : null,                                labelColor: VM_FISICO.text1 },
         { pct: overdueUnrealized,    left: rp,                       bg: VM_WARNING.active, label: overdueUnrealized > 0 ? `${avgOverdueUnrealized}%` : null,          labelColor: VM_WARNING.text2 },
         { pct: nonOverdueUnrealized, left: rp + overdueUnrealized,   bg: VM_FISICO.active,  label: nonOverdueUnrealized > 0 ? `${avgNonOverdueUnrealized}%` : null,   labelColor: VM_FISICO.text2 },
