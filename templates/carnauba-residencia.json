@@ -1,0 +1,1473 @@
+{
+  "id": "tpl-carnauba-residencia-v1",
+  "name": "Residência Unifamiliar",
+  "savedAt": "2026-05-21T12:00:00.000Z",
+  "grupos": [
+    {
+      "id": "grupo-tpl-preliminares",
+      "nome": "Preliminares",
+      "collapsed": false,
+      "items": [
+        {
+          "id": "item-tpl-limpeza-terreno",
+          "versions": [{
+            "number": 1,
+            "date": "2026-05-21",
+            "nome": "Limpeza do Terreno",
+            "etapas": [
+              {
+                "id": "e-lt-m1",
+                "mes": "2025-11",
+                "percentual": 100,
+                "orcamentoMaterial": 45500,
+                "orcamentoMaoDeObra": 20000,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Limpeza e destocamento do terreno, terraplanagem e locação da obra.",
+                "fisico_items": ["Limpeza e destocamento", "Terraplanagem e nivelamento", "Locação e demarcação da obra"],
+                "financeiro_items": ["Aluguel de retroescavadeira e trator", "Mão de obra de terraplanagem", "Material de demarcação"]
+              }
+            ]
+          }]
+        }
+      ]
+    },
+    {
+      "id": "grupo-tpl-fundacao",
+      "nome": "Fundação",
+      "collapsed": false,
+      "items": [
+        {
+          "id": "item-tpl-fund-aco",
+          "versions": [{
+            "number": 1,
+            "date": "2026-05-21",
+            "nome": "Aço Estrutural",
+            "etapas": [
+              {
+                "id": "e-fa-m2",
+                "mes": "2025-12",
+                "percentual": 60,
+                "orcamentoMaterial": 18000,
+                "orcamentoMaoDeObra": 10200,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Corte, dobra e montagem de armação das sapatas e baldrames.",
+                "fisico_items": ["Corte e dobra de aço CA-50/CA-60", "Montagem de armação das sapatas", "Posicionamento de estribos e vergalhões"],
+                "financeiro_items": ["Fornecimento de aço CA-50", "Arame recozido", "Mão de obra de ferragem"]
+              },
+              {
+                "id": "e-fa-m3",
+                "mes": "2026-01",
+                "percentual": 40,
+                "orcamentoMaterial": 12000,
+                "orcamentoMaoDeObra": 6800,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Complemento da armação de baldrames e vigas de fundação.",
+                "fisico_items": ["Armação de baldrames", "Ferragem de vigas de fundação", "Complemento de ancoragem"],
+                "financeiro_items": ["Fornecimento de aço CA-50", "Mão de obra de ferragem - baldrames"]
+              }
+            ]
+          }]
+        },
+        {
+          "id": "item-tpl-fund-concreto",
+          "versions": [{
+            "number": 1,
+            "date": "2026-05-21",
+            "nome": "Concreto",
+            "etapas": [
+              {
+                "id": "e-fc-m2",
+                "mes": "2025-12",
+                "percentual": 60,
+                "orcamentoMaterial": 39000,
+                "orcamentoMaoDeObra": 10200,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Concretagem das sapatas e blocos de fundação.",
+                "fisico_items": ["Concretagem das sapatas", "Adensamento e acabamento do concreto", "Cura do concreto"],
+                "financeiro_items": ["Concreto usinado fck 25 MPa", "Bombeamento de concreto", "Mão de obra de concretagem"]
+              },
+              {
+                "id": "e-fc-m3",
+                "mes": "2026-01",
+                "percentual": 40,
+                "orcamentoMaterial": 26000,
+                "orcamentoMaoDeObra": 6800,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Concretagem dos baldrames e vigas de fundação.",
+                "fisico_items": ["Concretagem dos baldrames", "Cura e proteção do concreto"],
+                "financeiro_items": ["Concreto usinado fck 25 MPa", "Mão de obra de concretagem - baldrames"]
+              }
+            ]
+          }]
+        },
+        {
+          "id": "item-tpl-fund-madeira",
+          "versions": [{
+            "number": 1,
+            "date": "2026-05-21",
+            "nome": "Fôrmas (Madeira)",
+            "etapas": [
+              {
+                "id": "e-fm-m2",
+                "mes": "2025-12",
+                "percentual": 100,
+                "orcamentoMaterial": 16500,
+                "orcamentoMaoDeObra": 11500,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Montagem e desmontagem de fôrmas de madeira para as fundações.",
+                "fisico_items": ["Montagem de fôrmas de madeira", "Escoramento e travamento", "Desmontagem e recolhimento"],
+                "financeiro_items": ["Madeira serrada para fôrmas", "Pregos e arames", "Mão de obra de carpintaria de fôrmas"]
+              }
+            ]
+          }]
+        },
+        {
+          "id": "item-tpl-fund-escavacao",
+          "versions": [{
+            "number": 1,
+            "date": "2026-05-21",
+            "nome": "Escavação",
+            "etapas": [
+              {
+                "id": "e-fe-m2",
+                "mes": "2025-12",
+                "percentual": 100,
+                "orcamentoMaterial": 15500,
+                "orcamentoMaoDeObra": 5000,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Escavação mecânica e manual para sapatas, baldrames e passagem de tubulações.",
+                "fisico_items": ["Escavação mecânica de sapatas", "Escavação manual de valas", "Reaterro e compactação"],
+                "financeiro_items": ["Aluguel de miniescavadeira", "Transporte de terra excedente", "Mão de obra de escavação manual"]
+              }
+            ]
+          }]
+        },
+        {
+          "id": "item-tpl-fund-outros1",
+          "versions": [{
+            "number": 1,
+            "date": "2026-05-21",
+            "nome": "Outros 1",
+            "etapas": [
+              {
+                "id": "e-fo-m2",
+                "mes": "2025-12",
+                "percentual": 100,
+                "orcamentoMaterial": 0,
+                "orcamentoMaoDeObra": 10000,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Serviços complementares de fundação: regularização, brita de lastro e impermeabilização de fundações.",
+                "fisico_items": ["Regularização do fundo das sapatas", "Lastro de brita e concreto magro", "Impermeabilização de fundações"],
+                "financeiro_items": ["Mão de obra de serviços complementares", "Impermeabilizante de fundação"]
+              }
+            ]
+          }]
+        }
+      ]
+    },
+    {
+      "id": "grupo-tpl-estrutura",
+      "nome": "Estrutura",
+      "collapsed": false,
+      "items": [
+        {
+          "id": "item-tpl-est-alvenaria",
+          "versions": [{
+            "number": 1,
+            "date": "2026-05-21",
+            "nome": "Alvenaria estrutural ou fechamento",
+            "etapas": [
+              {
+                "id": "e-ea-m3",
+                "mes": "2026-01",
+                "percentual": 25,
+                "orcamentoMaterial": 17500,
+                "orcamentoMaoDeObra": 15000,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Início do assentamento de blocos - pavimento térreo.",
+                "fisico_items": ["Assentamento de blocos - térreo", "Elevação de paredes externas - 1ª fase"],
+                "financeiro_items": ["Bloco cerâmico / concreto", "Argamassa de assentamento", "Mão de obra de alvenaria"]
+              },
+              {
+                "id": "e-ea-m4",
+                "mes": "2026-02",
+                "percentual": 25,
+                "orcamentoMaterial": 17500,
+                "orcamentoMaoDeObra": 15000,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Continuação da alvenaria - paredes internas e contramarcos.",
+                "fisico_items": ["Assentamento de blocos - paredes internas", "Instalação de contramarcos", "Vergas e contravergas"],
+                "financeiro_items": ["Bloco cerâmico / concreto", "Argamassa", "Contramarcos metálicos", "Mão de obra de alvenaria"]
+              },
+              {
+                "id": "e-ea-m5",
+                "mes": "2026-03",
+                "percentual": 35,
+                "orcamentoMaterial": 24500,
+                "orcamentoMaoDeObra": 21000,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Alvenaria do pavimento superior e complemento do térreo.",
+                "fisico_items": ["Alvenaria do 1º pavimento", "Platibanda e arremates", "Vergas e cintas"],
+                "financeiro_items": ["Bloco cerâmico / concreto", "Argamassa", "Mão de obra de alvenaria - 1º pav"]
+              },
+              {
+                "id": "e-ea-m6",
+                "mes": "2026-04",
+                "percentual": 15,
+                "orcamentoMaterial": 10500,
+                "orcamentoMaoDeObra": 9000,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Arremates finais de alvenaria e fechamentos complementares.",
+                "fisico_items": ["Fechamentos complementares", "Arremates e caixilhos de alvenaria"],
+                "financeiro_items": ["Bloco cerâmico", "Argamassa de arremate", "Mão de obra de fechamentos"]
+              }
+            ]
+          }]
+        },
+        {
+          "id": "item-tpl-est-laje",
+          "versions": [{
+            "number": 1,
+            "date": "2026-05-21",
+            "nome": "Laje Monolítica ou Pré-moldada",
+            "etapas": [
+              {
+                "id": "e-el-m3",
+                "mes": "2026-01",
+                "percentual": 25,
+                "orcamentoMaterial": 15000,
+                "orcamentoMaoDeObra": 10000,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Fôrmas, escoramento e armação para laje do térreo.",
+                "fisico_items": ["Montagem de fôrmas para laje", "Escoramento da laje", "Armação da laje - fundo"],
+                "financeiro_items": ["Madeira para fôrmas de laje", "Escoras metálicas", "Mão de obra de laje"]
+              },
+              {
+                "id": "e-el-m4",
+                "mes": "2026-02",
+                "percentual": 25,
+                "orcamentoMaterial": 15000,
+                "orcamentoMaoDeObra": 10000,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Concretagem da laje do térreo e cura.",
+                "fisico_items": ["Concretagem da laje do térreo", "Vibração e acabamento superficial", "Cura do concreto"],
+                "financeiro_items": ["Concreto usinado fck 25 MPa", "Bombeamento", "Mão de obra de concretagem da laje"]
+              },
+              {
+                "id": "e-el-m5",
+                "mes": "2026-03",
+                "percentual": 35,
+                "orcamentoMaterial": 21000,
+                "orcamentoMaoDeObra": 14000,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Laje do 1º pavimento: fôrmas, armação e concretagem.",
+                "fisico_items": ["Fôrmas e escoramento - 1º pav", "Armação da laje superior", "Concretagem da laje superior"],
+                "financeiro_items": ["Concreto usinado fck 25 MPa", "Madeira e escoras", "Mão de obra - laje superior"]
+              },
+              {
+                "id": "e-el-m6",
+                "mes": "2026-04",
+                "percentual": 15,
+                "orcamentoMaterial": 9000,
+                "orcamentoMaoDeObra": 6000,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Lajes complementares e arremates (varanda, área de serviço).",
+                "fisico_items": ["Laje da varanda", "Lajes de arremate e complementos"],
+                "financeiro_items": ["Concreto e material complementar", "Mão de obra de lajes complementares"]
+              }
+            ]
+          }]
+        },
+        {
+          "id": "item-tpl-est-aco",
+          "versions": [{
+            "number": 1,
+            "date": "2026-05-21",
+            "nome": "Aço Estrutural",
+            "etapas": [
+              {
+                "id": "e-eaco-m3",
+                "mes": "2026-01",
+                "percentual": 25,
+                "orcamentoMaterial": 10000,
+                "orcamentoMaoDeObra": 6000,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Armação de pilares e vigas do pavimento térreo.",
+                "fisico_items": ["Armação de pilares - térreo", "Armação de vigas intermediárias"],
+                "financeiro_items": ["Aço CA-50 para pilares e vigas", "Mão de obra de ferragem estrutural"]
+              },
+              {
+                "id": "e-eaco-m4",
+                "mes": "2026-02",
+                "percentual": 25,
+                "orcamentoMaterial": 10000,
+                "orcamentoMaoDeObra": 6000,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Armação de pilares e vigas do 1º pavimento.",
+                "fisico_items": ["Armação de pilares - 1º pav", "Vigas de amarração e cintas"],
+                "financeiro_items": ["Aço CA-50 para 1º pavimento", "Mão de obra de ferragem - 1º pav"]
+              },
+              {
+                "id": "e-eaco-m5",
+                "mes": "2026-03",
+                "percentual": 35,
+                "orcamentoMaterial": 14000,
+                "orcamentoMaoDeObra": 8400,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Armação do coroamento e elementos estruturais do telhado.",
+                "fisico_items": ["Armação do coroamento", "Ferragem de vigas de cobertura", "Ancoragens para telhado"],
+                "financeiro_items": ["Aço CA-50 para coroamento", "Mão de obra de ferragem - cobertura"]
+              },
+              {
+                "id": "e-eaco-m6",
+                "mes": "2026-04",
+                "percentual": 15,
+                "orcamentoMaterial": 6000,
+                "orcamentoMaoDeObra": 3600,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Complementos de armação e elementos metálicos estruturais.",
+                "fisico_items": ["Armação complementar", "Inserção de chumbadores e ancoragens"],
+                "financeiro_items": ["Aço e elementos metálicos complementares", "Mão de obra de ferragem"]
+              }
+            ]
+          }]
+        },
+        {
+          "id": "item-tpl-est-escoramento",
+          "versions": [{
+            "number": 1,
+            "date": "2026-05-21",
+            "nome": "Escoramento",
+            "etapas": [
+              {
+                "id": "e-esc-m3",
+                "mes": "2026-01",
+                "percentual": 25,
+                "orcamentoMaterial": 5000,
+                "orcamentoMaoDeObra": 3750,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Montagem do escoramento das fôrmas do térreo.",
+                "fisico_items": ["Montagem de escoras metálicas - térreo", "Nivelamento e travamento"],
+                "financeiro_items": ["Escoras metálicas - locação", "Mão de obra de escoramento"]
+              },
+              {
+                "id": "e-esc-m4",
+                "mes": "2026-02",
+                "percentual": 25,
+                "orcamentoMaterial": 5000,
+                "orcamentoMaoDeObra": 3750,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Escoramento do 1º pavimento.",
+                "fisico_items": ["Escoras para laje do 1º pav", "Reescoramento após desforma"],
+                "financeiro_items": ["Escoras metálicas - locação 1º pav", "Mão de obra de escoramento"]
+              },
+              {
+                "id": "e-esc-m5",
+                "mes": "2026-03",
+                "percentual": 35,
+                "orcamentoMaterial": 7000,
+                "orcamentoMaoDeObra": 5250,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Escoramento da laje de cobertura.",
+                "fisico_items": ["Escoras para laje de cobertura", "Escoramento de vigas baldrame"],
+                "financeiro_items": ["Escoras metálicas - cobertura", "Mão de obra de escoramento"]
+              },
+              {
+                "id": "e-esc-m6",
+                "mes": "2026-04",
+                "percentual": 15,
+                "orcamentoMaterial": 3000,
+                "orcamentoMaoDeObra": 2250,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Retirada do escoramento e devolução de material.",
+                "fisico_items": ["Desforma e retirada de escoras", "Verificação de estrutura"],
+                "financeiro_items": ["Devolução de escoras locadas", "Mão de obra de desforma"]
+              }
+            ]
+          }]
+        },
+        {
+          "id": "item-tpl-est-concreto",
+          "versions": [{
+            "number": 1,
+            "date": "2026-05-21",
+            "nome": "Concreto Estrutural",
+            "etapas": [
+              {
+                "id": "e-ec-m3",
+                "mes": "2026-01",
+                "percentual": 25,
+                "orcamentoMaterial": 22500,
+                "orcamentoMaoDeObra": 10000,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Concretagem de pilares e vigas do térreo.",
+                "fisico_items": ["Concretagem de pilares - térreo", "Concretagem de vigas intermediárias"],
+                "financeiro_items": ["Concreto usinado fck 25 MPa - pilares", "Bombeamento", "Mão de obra de concretagem"]
+              },
+              {
+                "id": "e-ec-m4",
+                "mes": "2026-02",
+                "percentual": 25,
+                "orcamentoMaterial": 22500,
+                "orcamentoMaoDeObra": 10000,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Concretagem de pilares do 1º pavimento.",
+                "fisico_items": ["Concretagem de pilares - 1º pav", "Vigas de amarração"],
+                "financeiro_items": ["Concreto usinado fck 25 MPa - 1º pav", "Bombeamento", "Mão de obra de concretagem"]
+              },
+              {
+                "id": "e-ec-m5",
+                "mes": "2026-03",
+                "percentual": 35,
+                "orcamentoMaterial": 31500,
+                "orcamentoMaoDeObra": 14000,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Concretagem do coroamento e vigas de cobertura.",
+                "fisico_items": ["Concretagem do coroamento", "Vigas de cobertura e platibanda"],
+                "financeiro_items": ["Concreto usinado fck 25 MPa - cobertura", "Bombeamento", "Mão de obra de concretagem"]
+              },
+              {
+                "id": "e-ec-m6",
+                "mes": "2026-04",
+                "percentual": 15,
+                "orcamentoMaterial": 13500,
+                "orcamentoMaoDeObra": 6000,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Concreto de arremate, calçadas e complementos.",
+                "fisico_items": ["Concreto de arremate", "Concretagem de complementos estruturais"],
+                "financeiro_items": ["Concreto e argamassa de arremate", "Mão de obra complementar"]
+              }
+            ]
+          }]
+        },
+        {
+          "id": "item-tpl-est-telhado",
+          "versions": [{
+            "number": 1,
+            "date": "2026-05-21",
+            "nome": "Telhado",
+            "etapas": [
+              {
+                "id": "e-et-m3",
+                "mes": "2026-01",
+                "percentual": 25,
+                "orcamentoMaterial": 5000,
+                "orcamentoMaoDeObra": 2500,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Estrutura de madeira e preparação para cobertura.",
+                "fisico_items": ["Estrutura de madeira do telhado", "Caibros e ripas - 1ª fase"],
+                "financeiro_items": ["Madeira serrada para estrutura do telhado", "Mão de obra de carpintaria"]
+              },
+              {
+                "id": "e-et-m4",
+                "mes": "2026-02",
+                "percentual": 25,
+                "orcamentoMaterial": 5000,
+                "orcamentoMaoDeObra": 2500,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Colocação de telhas - primeira etapa.",
+                "fisico_items": ["Assentamento de telhas - 1ª fase", "Cumeeiras e arremates iniciais"],
+                "financeiro_items": ["Telhas cerâmicas / concreto", "Mão de obra de telhadista"]
+              },
+              {
+                "id": "e-et-m5",
+                "mes": "2026-03",
+                "percentual": 35,
+                "orcamentoMaterial": 7000,
+                "orcamentoMaoDeObra": 3500,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Conclusão do telhado e instalação de calhas e rufos.",
+                "fisico_items": ["Conclusão do assentamento de telhas", "Instalação de calhas e rufos", "Arremates de cobertura"],
+                "financeiro_items": ["Telhas complementares", "Calhas e rufos metálicos", "Mão de obra de cobertura"]
+              },
+              {
+                "id": "e-et-m6",
+                "mes": "2026-04",
+                "percentual": 15,
+                "orcamentoMaterial": 3000,
+                "orcamentoMaoDeObra": 1500,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Complementos e vedações do telhado.",
+                "fisico_items": ["Vedação de encontros e juntas", "Arremates finais de cobertura"],
+                "financeiro_items": ["Material de vedação e calafetação", "Mão de obra de arremates"]
+              }
+            ]
+          }]
+        },
+        {
+          "id": "item-tpl-est-outros2",
+          "versions": [{
+            "number": 1,
+            "date": "2026-05-21",
+            "nome": "Outros 2",
+            "etapas": [
+              {
+                "id": "e-eo-m3",
+                "mes": "2026-01",
+                "percentual": 25,
+                "orcamentoMaterial": 7500,
+                "orcamentoMaoDeObra": 5250,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Serviços complementares de estrutura: escadas, reservatório, caixas.",
+                "fisico_items": ["Escada em concreto - estrutura", "Caixa d'água inferior"],
+                "financeiro_items": ["Material para escadas e elementos especiais", "Mão de obra complementar de estrutura"]
+              },
+              {
+                "id": "e-eo-m4",
+                "mes": "2026-02",
+                "percentual": 25,
+                "orcamentoMaterial": 7500,
+                "orcamentoMaoDeObra": 5250,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Elementos estruturais especiais - caixa d'água superior e reservatórios.",
+                "fisico_items": ["Caixa d'água superior", "Elementos especiais de concreto"],
+                "financeiro_items": ["Caixa d'água e material especial", "Mão de obra complementar"]
+              },
+              {
+                "id": "e-eo-m5",
+                "mes": "2026-03",
+                "percentual": 35,
+                "orcamentoMaterial": 10500,
+                "orcamentoMaoDeObra": 7350,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Muros de arrimo, grades e elementos de segurança estrutural.",
+                "fisico_items": ["Muros de arrimo", "Estrutura para grades e guardrails"],
+                "financeiro_items": ["Material para muros de arrimo", "Mão de obra de muros"]
+              },
+              {
+                "id": "e-eo-m6",
+                "mes": "2026-04",
+                "percentual": 15,
+                "orcamentoMaterial": 4500,
+                "orcamentoMaoDeObra": 3150,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Complementos e arremates de elementos estruturais especiais.",
+                "fisico_items": ["Arremates estruturais complementares"],
+                "financeiro_items": ["Material de arremate e complemento", "Mão de obra final de estrutura"]
+              }
+            ]
+          }]
+        }
+      ]
+    },
+    {
+      "id": "grupo-tpl-instalacoes",
+      "nome": "Instalações",
+      "collapsed": false,
+      "items": [
+        {
+          "id": "item-tpl-inst-eletricas",
+          "versions": [{
+            "number": 1,
+            "date": "2026-05-21",
+            "nome": "Elétricas",
+            "etapas": [
+              {
+                "id": "e-ie-m3",
+                "mes": "2026-01",
+                "percentual": 10,
+                "orcamentoMaterial": 4300,
+                "orcamentoMaoDeObra": 2100,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Passagem de eletrodutos e caixas de passagem - embutidos na alvenaria.",
+                "fisico_items": ["Passagem de eletrodutos corrugados", "Instalação de caixas de passagem", "Pontos de aterramento"],
+                "financeiro_items": ["Eletrodutos corrugados e rígidos", "Caixas 4x2 e 4x4", "Mão de obra de instalação elétrica - rough"]
+              },
+              {
+                "id": "e-ie-m5",
+                "mes": "2026-03",
+                "percentual": 10,
+                "orcamentoMaterial": 4300,
+                "orcamentoMaoDeObra": 2100,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Instalação do quadro de distribuição e ramais principais.",
+                "fisico_items": ["Instalação do quadro de distribuição", "Ramais elétricos principais", "Eletrocalhas e condutores de força"],
+                "financeiro_items": ["Quadro de distribuição", "Disjuntores e barramentos", "Mão de obra de quadro elétrico"]
+              },
+              {
+                "id": "e-ie-m6",
+                "mes": "2026-04",
+                "percentual": 10,
+                "orcamentoMaterial": 4300,
+                "orcamentoMaoDeObra": 2100,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Passagem de cabos e fiação pelos eletrodutos.",
+                "fisico_items": ["Passagem de fiação pelos eletrodutos", "Identificação de circuitos"],
+                "financeiro_items": ["Cabos e fios elétricos", "Mão de obra de fiação"]
+              },
+              {
+                "id": "e-ie-m7",
+                "mes": "2026-05",
+                "percentual": 15,
+                "orcamentoMaterial": 6450,
+                "orcamentoMaoDeObra": 3150,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Instalação de tomadas, interruptores e pontos de iluminação.",
+                "fisico_items": ["Instalação de tomadas e interruptores", "Pontos de iluminação", "Pontos de ar-condicionado"],
+                "financeiro_items": ["Tomadas e interruptores", "Luminárias e spots", "Mão de obra de acabamento elétrico"]
+              },
+              {
+                "id": "e-ie-m8",
+                "mes": "2026-06",
+                "percentual": 20,
+                "orcamentoMaterial": 8600,
+                "orcamentoMaoDeObra": 4200,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Instalação de luminárias e circuitos de baixa tensão.",
+                "fisico_items": ["Instalação de luminárias", "Circuito de som e dados", "Instalação de câmeras e interfone"],
+                "financeiro_items": ["Luminárias de embutir e sobrepor", "Cabeamento estruturado", "Mão de obra de elétrica - acabamento"]
+              },
+              {
+                "id": "e-ie-m9",
+                "mes": "2026-07",
+                "percentual": 20,
+                "orcamentoMaterial": 8600,
+                "orcamentoMaoDeObra": 4200,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Ligação do padrão de entrada e regularização junto à concessionária.",
+                "fisico_items": ["Padrão de entrada de energia", "Ligação definitiva concessionária", "Aterramento e SPDA"],
+                "financeiro_items": ["Padrão de entrada bifásico/trifásico", "Taxa de ligação concessionária", "Mão de obra de padrão"]
+              },
+              {
+                "id": "e-ie-m10",
+                "mes": "2026-08",
+                "percentual": 15,
+                "orcamentoMaterial": 6450,
+                "orcamentoMaoDeObra": 3150,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Testes, comissionamento e complementos elétricos.",
+                "fisico_items": ["Testes e medições elétricas", "Laudo de instalações elétricas", "Complementos e arremates"],
+                "financeiro_items": ["Materiais de complemento elétrico", "Laudo do engenheiro eletricista", "Mão de obra final"]
+              }
+            ]
+          }]
+        },
+        {
+          "id": "item-tpl-inst-hidraulicas",
+          "versions": [{
+            "number": 1,
+            "date": "2026-05-21",
+            "nome": "Hidráulicas",
+            "etapas": [
+              {
+                "id": "e-ih-m2",
+                "mes": "2025-12",
+                "percentual": 10,
+                "orcamentoMaterial": 2500,
+                "orcamentoMaoDeObra": 900,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Passagem das tubulações de esgoto sob a laje.",
+                "fisico_items": ["Passagem de esgoto sob laje", "Caixas de gordura e inspeção"],
+                "financeiro_items": ["Tubos e conexões PVC esgoto", "Mão de obra de hidráulica - rough"]
+              },
+              {
+                "id": "e-ih-m5",
+                "mes": "2026-03",
+                "percentual": 15,
+                "orcamentoMaterial": 3750,
+                "orcamentoMaoDeObra": 1350,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Ramais de água fria e quente embutidos na alvenaria.",
+                "fisico_items": ["Ramais de água fria", "Ramais de água quente (CPVC)", "Registro de gaveta e esfera"],
+                "financeiro_items": ["Tubos e conexões CPVC e PPR", "Registros", "Mão de obra de hidráulica"]
+              },
+              {
+                "id": "e-ih-m6",
+                "mes": "2026-04",
+                "percentual": 20,
+                "orcamentoMaterial": 5000,
+                "orcamentoMaoDeObra": 1800,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Colunas de água e esgoto com prumadas.",
+                "fisico_items": ["Colunas de água fria e quente", "Prumadas de esgoto", "Ventilação do sistema de esgoto"],
+                "financeiro_items": ["Tubos e conexões para prumadas", "Material de ventilação de esgoto", "Mão de obra de prumadas"]
+              },
+              {
+                "id": "e-ih-m7",
+                "mes": "2026-05",
+                "percentual": 25,
+                "orcamentoMaterial": 6250,
+                "orcamentoMaoDeObra": 2250,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Instalação de louças, torneiras e acessórios hidráulicos.",
+                "fisico_items": ["Instalação de torneiras e misturadores", "Ponto de aquecedor / chuveiro", "Conexão da caixa d'água"],
+                "financeiro_items": ["Torneiras e misturadores", "Aquecedor de passagem a gás", "Mão de obra de hidráulica - acabamento"]
+              },
+              {
+                "id": "e-ih-m8",
+                "mes": "2026-06",
+                "percentual": 20,
+                "orcamentoMaterial": 5000,
+                "orcamentoMaoDeObra": 1800,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Instalação de ralos, sifões e complementos.",
+                "fisico_items": ["Ralos sifonados e grelhas", "Caixa coletora e fossa", "Ligação rede pública de esgoto"],
+                "financeiro_items": ["Ralos e sifões", "Fossa séptica e sumidouro", "Mão de obra de complemento hidráulico"]
+              },
+              {
+                "id": "e-ih-m9",
+                "mes": "2026-07",
+                "percentual": 10,
+                "orcamentoMaterial": 2500,
+                "orcamentoMaoDeObra": 900,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Testes hidrostáticos e regularização junto à concessionária.",
+                "fisico_items": ["Testes hidrostáticos de pressão", "Ligação de água da concessionária"],
+                "financeiro_items": ["Taxa de ligação de água", "Materiais de arremate hidráulico", "Mão de obra final hidráulica"]
+              }
+            ]
+          }]
+        },
+        {
+          "id": "item-tpl-inst-gas",
+          "versions": [{
+            "number": 1,
+            "date": "2026-05-21",
+            "nome": "Gás",
+            "etapas": [
+              {
+                "id": "e-ig-m7",
+                "mes": "2026-05",
+                "percentual": 25,
+                "orcamentoMaterial": 5000,
+                "orcamentoMaoDeObra": 0,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Projeto e passagem das tubulações de gás.",
+                "fisico_items": ["Projeto de instalação de gás", "Passagem de tubulação de cobre"],
+                "financeiro_items": ["Projeto aprovado pelo Corpo de Bombeiros", "Tubulação de cobre para gás"]
+              },
+              {
+                "id": "e-ig-m8",
+                "mes": "2026-06",
+                "percentual": 25,
+                "orcamentoMaterial": 5000,
+                "orcamentoMaoDeObra": 0,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Instalação do central de gás e reguladores.",
+                "fisico_items": ["Central de gás (central de cilindros / ponto de GN)", "Reguladores de pressão"],
+                "financeiro_items": ["Central de gás e reguladores", "Válvulas de segurança"]
+              },
+              {
+                "id": "e-ig-m9",
+                "mes": "2026-07",
+                "percentual": 25,
+                "orcamentoMaterial": 5000,
+                "orcamentoMaoDeObra": 0,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Conexão dos pontos de gás e teste de estanqueidade.",
+                "fisico_items": ["Conexão dos pontos de gás", "Teste de estanqueidade"],
+                "financeiro_items": ["Conexões e fitting de gás", "Laudo de instalação de gás"]
+              },
+              {
+                "id": "e-ig-m10",
+                "mes": "2026-08",
+                "percentual": 25,
+                "orcamentoMaterial": 5000,
+                "orcamentoMaoDeObra": 0,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Vistoria do Corpo de Bombeiros e habite-se parcial de gás.",
+                "fisico_items": ["Vistoria do Corpo de Bombeiros", "Entrega da instalação de gás"],
+                "financeiro_items": ["Taxa de vistoria", "Arremates finais de gás"]
+              }
+            ]
+          }]
+        },
+        {
+          "id": "item-tpl-inst-bombeiro",
+          "versions": [{
+            "number": 1,
+            "date": "2026-05-21",
+            "nome": "Bombeiro Civil",
+            "etapas": [
+              {
+                "id": "e-ib-m8",
+                "mes": "2026-06",
+                "percentual": 40,
+                "orcamentoMaterial": 16000,
+                "orcamentoMaoDeObra": 0,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Projeto e instalação do sistema de detecção e alarme de incêndio.",
+                "fisico_items": ["Projeto de PPCI aprovado", "Instalação de detectores de fumaça", "Central de alarme de incêndio"],
+                "financeiro_items": ["Projeto PPCI", "Central de alarme e detectores", "Acionadores manuais"]
+              },
+              {
+                "id": "e-ib-m9",
+                "mes": "2026-07",
+                "percentual": 35,
+                "orcamentoMaterial": 14000,
+                "orcamentoMaoDeObra": 0,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Extintores, sinalização de emergência e iluminação de segurança.",
+                "fisico_items": ["Instalação de extintores", "Sinalização de rotas de fuga", "Iluminação de emergência"],
+                "financeiro_items": ["Extintores de incêndio", "Placas de sinalização de emergência", "Luminárias de emergência"]
+              },
+              {
+                "id": "e-ib-m10",
+                "mes": "2026-08",
+                "percentual": 25,
+                "orcamentoMaterial": 10000,
+                "orcamentoMaoDeObra": 0,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Vistoria final do Corpo de Bombeiros e AVCB.",
+                "fisico_items": ["Vistoria do Corpo de Bombeiros", "Obtenção do AVCB"],
+                "financeiro_items": ["Taxa de vistoria do Corpo de Bombeiros", "AVCB e complementos"]
+              }
+            ]
+          }]
+        }
+      ]
+    },
+    {
+      "id": "grupo-tpl-acabamento",
+      "nome": "Acabamento",
+      "collapsed": false,
+      "items": [
+        {
+          "id": "item-tpl-acab-chapisco-int",
+          "versions": [{
+            "number": 1,
+            "date": "2026-05-21",
+            "nome": "Chapisco, emboço e reboco / Gesso - Interno",
+            "etapas": [
+              {
+                "id": "e-ci-m7",
+                "mes": "2026-05",
+                "percentual": 50,
+                "orcamentoMaterial": 8750,
+                "orcamentoMaoDeObra": 6250,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Chapisco e emboço das paredes internas - ambientes molhados e teto.",
+                "fisico_items": ["Chapisco das paredes internas", "Emboço de banheiros e áreas molhadas", "Revestimento interno de teto"],
+                "financeiro_items": ["Argamassa de chapisco", "Argamassa de emboço industrializada", "Mão de obra de revestimento interno"]
+              },
+              {
+                "id": "e-ci-m8",
+                "mes": "2026-06",
+                "percentual": 50,
+                "orcamentoMaterial": 8750,
+                "orcamentoMaoDeObra": 6250,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Reboco e gesso liso nas paredes internas secas.",
+                "fisico_items": ["Reboco de paredes secas", "Gesso liso em paredes e teto", "Massa corrida PVA"],
+                "financeiro_items": ["Gesso em pó / pasta", "Massa corrida PVA", "Mão de obra de gesseiro"]
+              }
+            ]
+          }]
+        },
+        {
+          "id": "item-tpl-acab-chapisco-ext",
+          "versions": [{
+            "number": 1,
+            "date": "2026-05-21",
+            "nome": "Chapisco, emboço e reboco / Monocapa - Ext",
+            "etapas": [
+              {
+                "id": "e-ce-m7",
+                "mes": "2026-05",
+                "percentual": 50,
+                "orcamentoMaterial": 10000,
+                "orcamentoMaoDeObra": 7250,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Chapisco e emboço das fachadas - frente e lateral.",
+                "fisico_items": ["Chapisco de fachada - frente", "Emboço de fachada - lateral", "Preparo para revestimento monocapa"],
+                "financeiro_items": ["Argamassa de chapisco", "Emboço industrializado para fachada", "Mão de obra de fachada"]
+              },
+              {
+                "id": "e-ce-m8",
+                "mes": "2026-06",
+                "percentual": 50,
+                "orcamentoMaterial": 10000,
+                "orcamentoMaoDeObra": 7250,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Aplicação do revestimento monocapa nas fachadas.",
+                "fisico_items": ["Aplicação de revestimento monocapa", "Frisos e detalhes de fachada"],
+                "financeiro_items": ["Revestimento monocapa texturizado", "Perfis e frisos de fachada", "Mão de obra de textura"]
+              }
+            ]
+          }]
+        },
+        {
+          "id": "item-tpl-acab-portas",
+          "versions": [{
+            "number": 1,
+            "date": "2026-05-21",
+            "nome": "Portas, janelas / esquadrias",
+            "etapas": [
+              {
+                "id": "e-pj-m8",
+                "mes": "2026-06",
+                "percentual": 40,
+                "orcamentoMaterial": 26000,
+                "orcamentoMaoDeObra": 8000,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Instalação de janelas de alumínio e portas de entrada.",
+                "fisico_items": ["Instalação de janelas de alumínio", "Porta de entrada principal", "Janelas de serviço e banheiro"],
+                "financeiro_items": ["Janelas de alumínio com vidro", "Porta de entrada de madeira / ferro", "Mão de obra de esquadrias"]
+              },
+              {
+                "id": "e-pj-m9",
+                "mes": "2026-07",
+                "percentual": 40,
+                "orcamentoMaterial": 26000,
+                "orcamentoMaoDeObra": 8000,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Instalação de portas internas e complementos.",
+                "fisico_items": ["Portas internas de madeira", "Batentes e guarnições", "Instalação de fechaduras"],
+                "financeiro_items": ["Portas internas e lambris", "Batentes e alizares", "Fechaduras e puxadores", "Mão de obra de marcenaria"]
+              },
+              {
+                "id": "e-pj-m10",
+                "mes": "2026-08",
+                "percentual": 20,
+                "orcamentoMaterial": 13000,
+                "orcamentoMaoDeObra": 4000,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Complementos de esquadrias: basculantes, grades e vidros.",
+                "fisico_items": ["Grades de proteção", "Vidros temperados complementares", "Peitoris e arremates"],
+                "financeiro_items": ["Grades de ferro ou alumínio", "Vidros temperados", "Mão de obra de arremate de esquadrias"]
+              }
+            ]
+          }]
+        },
+        {
+          "id": "item-tpl-acab-impermeabilizacao",
+          "versions": [{
+            "number": 1,
+            "date": "2026-05-21",
+            "nome": "Impermeabilização",
+            "etapas": [
+              {
+                "id": "e-imp-m7",
+                "mes": "2026-05",
+                "percentual": 50,
+                "orcamentoMaterial": 6500,
+                "orcamentoMaoDeObra": 6000,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Impermeabilização de lajes, terraços e áreas externas.",
+                "fisico_items": ["Impermeabilização de laje de cobertura", "Impermeabilização de terraço", "Tratamento de pingadeiras"],
+                "financeiro_items": ["Manta asfáltica 4mm", "Argamassa polimérica para terraço", "Mão de obra de impermeabilização"]
+              },
+              {
+                "id": "e-imp-m8",
+                "mes": "2026-06",
+                "percentual": 50,
+                "orcamentoMaterial": 6500,
+                "orcamentoMaoDeObra": 6000,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Impermeabilização de banheiros, cozinha e área de serviço.",
+                "fisico_items": ["Impermeabilização de banheiros", "Impermeabilização da cozinha e area de serviço", "Proteção mecânica das membranas"],
+                "financeiro_items": ["Argamassa polimérica para ambientes molhados", "Proteção de impermeabilização", "Mão de obra de impermeabilização interna"]
+              }
+            ]
+          }]
+        },
+        {
+          "id": "item-tpl-acab-contrapiso",
+          "versions": [{
+            "number": 1,
+            "date": "2026-05-21",
+            "nome": "Contrapiso",
+            "etapas": [
+              {
+                "id": "e-cp-m7",
+                "mes": "2026-05",
+                "percentual": 50,
+                "orcamentoMaterial": 9250,
+                "orcamentoMaoDeObra": 6000,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Contrapiso do pavimento térreo.",
+                "fisico_items": ["Contrapiso do pavimento térreo", "Compactação e regularização do sub-base"],
+                "financeiro_items": ["Argamassa de contrapiso", "Tela soldada de reforço", "Mão de obra de contrapiso"]
+              },
+              {
+                "id": "e-cp-m8",
+                "mes": "2026-06",
+                "percentual": 50,
+                "orcamentoMaterial": 9250,
+                "orcamentoMaoDeObra": 6000,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Contrapiso do 1º pavimento.",
+                "fisico_items": ["Contrapiso do 1º pavimento", "Regularização para piso"],
+                "financeiro_items": ["Argamassa de contrapiso 1º pav", "Mão de obra de contrapiso"]
+              }
+            ]
+          }]
+        },
+        {
+          "id": "item-tpl-acab-pisos",
+          "versions": [{
+            "number": 1,
+            "date": "2026-05-21",
+            "nome": "Pisos e Azulejos",
+            "etapas": [
+              {
+                "id": "e-pa-m8",
+                "mes": "2026-06",
+                "percentual": 25,
+                "orcamentoMaterial": 11250,
+                "orcamentoMaoDeObra": 6250,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Assentamento de azulejos em banheiros e cozinha.",
+                "fisico_items": ["Azulejos de banheiros", "Revestimento cerâmico da cozinha", "Rejunte de banheiros"],
+                "financeiro_items": ["Azulejo 30x60 para banheiros", "Cerâmica de cozinha", "Argamassa e rejunte", "Mão de obra de azulejista"]
+              },
+              {
+                "id": "e-pa-m9",
+                "mes": "2026-07",
+                "percentual": 35,
+                "orcamentoMaterial": 15750,
+                "orcamentoMaoDeObra": 8750,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Assentamento de pisos porcelanatos e cerâmicas - ambientes sociais e quartos.",
+                "fisico_items": ["Porcelanato da sala e quartos", "Cerâmica de área de serviço", "Rodapés"],
+                "financeiro_items": ["Porcelanato 60x60 polido", "Cerâmica de piso para quartos", "Rodapé cerâmico", "Mão de obra de piso"]
+              },
+              {
+                "id": "e-pa-m10",
+                "mes": "2026-08",
+                "percentual": 40,
+                "orcamentoMaterial": 18000,
+                "orcamentoMaoDeObra": 10000,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Conclusão dos pisos e revestimentos com rejunte final.",
+                "fisico_items": ["Piso externo e varanda", "Rejunte e limpeza final de pisos", "Arremates e rodapés complementares"],
+                "financeiro_items": ["Cerâmica antiderrapante para áreas externas", "Rejunte epóxi para banheiros", "Mão de obra de arremates de piso"]
+              }
+            ]
+          }]
+        },
+        {
+          "id": "item-tpl-acab-marmoraria",
+          "versions": [{
+            "number": 1,
+            "date": "2026-05-21",
+            "nome": "Marmoraria",
+            "etapas": [
+              {
+                "id": "e-mar-m8",
+                "mes": "2026-06",
+                "percentual": 33,
+                "orcamentoMaterial": 4455,
+                "orcamentoMaoDeObra": 3960,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Medição e fabricação de peças em marmoraria.",
+                "fisico_items": ["Medição para bancadas", "Fabricação de tampos de banheiro"],
+                "financeiro_items": ["Granito ou mármore para bancadas", "Tampos de banheiro"]
+              },
+              {
+                "id": "e-mar-m9",
+                "mes": "2026-07",
+                "percentual": 33,
+                "orcamentoMaterial": 4455,
+                "orcamentoMaoDeObra": 3960,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Instalação de bancadas e soleiras.",
+                "fisico_items": ["Instalação de bancadas de banheiro", "Soleiras de granito nas portas", "Peitoris externos"],
+                "financeiro_items": ["Soleiras e peitoris de granito", "Mão de obra de marmoraria"]
+              },
+              {
+                "id": "e-mar-m10",
+                "mes": "2026-08",
+                "percentual": 34,
+                "orcamentoMaterial": 4590,
+                "orcamentoMaoDeObra": 4080,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Bancada da cozinha e complementos de marmoraria.",
+                "fisico_items": ["Bancada da cozinha em granito", "Rodapés de granito complementares"],
+                "financeiro_items": ["Granito para bancada de cozinha", "Mão de obra de assentamento de granito"]
+              }
+            ]
+          }]
+        },
+        {
+          "id": "item-tpl-acab-loucas",
+          "versions": [{
+            "number": 1,
+            "date": "2026-05-21",
+            "nome": "Louças e Metais",
+            "etapas": [
+              {
+                "id": "e-lm-m9",
+                "mes": "2026-07",
+                "percentual": 50,
+                "orcamentoMaterial": 9250,
+                "orcamentoMaoDeObra": 7000,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Instalação de louças sanitárias e metais de banheiro.",
+                "fisico_items": ["Instalação de vasos sanitários", "Instalação de cubas e pias de banheiro", "Torneiras e misturadores de banheiro"],
+                "financeiro_items": ["Vasos sanitários", "Cubas de embutir", "Torneiras e misturadores de banheiro", "Mão de obra de instalação de louças"]
+              },
+              {
+                "id": "e-lm-m10",
+                "mes": "2026-08",
+                "percentual": 50,
+                "orcamentoMaterial": 9250,
+                "orcamentoMaoDeObra": 7000,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Instalação de acessórios de banheiro, pia de cozinha e metais complementares.",
+                "fisico_items": ["Acessórios de banheiro (saboneteira, toalheiro)", "Pia e torneira da cozinha", "Ducha higiênica e complementos"],
+                "financeiro_items": ["Acessórios de banheiro em inox", "Pia de cozinha em inox", "Torneira de cozinha", "Mão de obra de metais"]
+              }
+            ]
+          }]
+        },
+        {
+          "id": "item-tpl-acab-forro",
+          "versions": [{
+            "number": 1,
+            "date": "2026-05-21",
+            "nome": "Forro de Gesso",
+            "etapas": [
+              {
+                "id": "e-fg-m8",
+                "mes": "2026-06",
+                "percentual": 30,
+                "orcamentoMaterial": 6000,
+                "orcamentoMaoDeObra": 5400,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Instalação de forro de gesso nos banheiros e corredor.",
+                "fisico_items": ["Forro de gesso em banheiros", "Forro de gesso no corredor", "Sanca de gesso simples"],
+                "financeiro_items": ["Gesso em placa para forro", "Estrutura metálica para forro", "Mão de obra de gesseiro - forro"]
+              },
+              {
+                "id": "e-fg-m9",
+                "mes": "2026-07",
+                "percentual": 35,
+                "orcamentoMaterial": 7000,
+                "orcamentoMaoDeObra": 6300,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Forro de gesso na sala, quartos e hall de entrada.",
+                "fisico_items": ["Forro de gesso na sala", "Forro de gesso nos quartos", "Sancas e molduras"],
+                "financeiro_items": ["Gesso em placa para sala e quartos", "Molduras e sancas de gesso", "Mão de obra de gesseiro"]
+              },
+              {
+                "id": "e-fg-m10",
+                "mes": "2026-08",
+                "percentual": 35,
+                "orcamentoMaterial": 7000,
+                "orcamentoMaoDeObra": 6300,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Forros complementares e acabamentos de gesso.",
+                "fisico_items": ["Forro de gesso em área de serviço", "Complementos e arremates de gesso"],
+                "financeiro_items": ["Material complementar de gesso", "Mão de obra de arremates de forro"]
+              }
+            ]
+          }]
+        },
+        {
+          "id": "item-tpl-acab-pintura-int",
+          "versions": [{
+            "number": 1,
+            "date": "2026-05-21",
+            "nome": "Pintura Interna",
+            "etapas": [
+              {
+                "id": "e-pi-m9",
+                "mes": "2026-07",
+                "percentual": 50,
+                "orcamentoMaterial": 13500,
+                "orcamentoMaoDeObra": 10250,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Aplicação de massa corrida e tinta látex interna - 1ª demão.",
+                "fisico_items": ["Massa corrida PVA em paredes", "Selador em gesso", "1ª demão de tinta látex"],
+                "financeiro_items": ["Massa corrida PVA", "Selador acrílico para gesso", "Tinta látex premium interna", "Mão de obra de pintor"]
+              },
+              {
+                "id": "e-pi-m10",
+                "mes": "2026-08",
+                "percentual": 50,
+                "orcamentoMaterial": 13500,
+                "orcamentoMaoDeObra": 10250,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "2ª e 3ª demão de tinta e arremates de pintura interna.",
+                "fisico_items": ["2ª e 3ª demão de tinta látex", "Tinta esmalte em esquadrias de madeira", "Limpeza e retoque final de pintura"],
+                "financeiro_items": ["Tinta látex complementar", "Tinta esmalte para madeiras", "Lixa e materiais auxiliares de pintura", "Mão de obra de pintura - acabamento"]
+              }
+            ]
+          }]
+        },
+        {
+          "id": "item-tpl-acab-pintura-ext",
+          "versions": [{
+            "number": 1,
+            "date": "2026-05-21",
+            "nome": "Pintura Externa",
+            "etapas": [
+              {
+                "id": "e-pe-m9",
+                "mes": "2026-07",
+                "percentual": 50,
+                "orcamentoMaterial": 9250,
+                "orcamentoMaoDeObra": 7250,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Selador e 1ª demão de tinta acrílica de fachada.",
+                "fisico_items": ["Selador acrílico de fachada", "1ª demão de tinta acrílica externa", "Preparação de andaimes de fachada"],
+                "financeiro_items": ["Selador de fachada", "Tinta acrílica premium para fachada", "Aluguel de andaime", "Mão de obra de pintor de fachada"]
+              },
+              {
+                "id": "e-pe-m10",
+                "mes": "2026-08",
+                "percentual": 50,
+                "orcamentoMaterial": 9250,
+                "orcamentoMaoDeObra": 7250,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "2ª e 3ª demão de tinta de fachada e arremates externos.",
+                "fisico_items": ["2ª e 3ª demão de tinta de fachada", "Pintura de gradis e portões", "Retoque e limpeza de fachada"],
+                "financeiro_items": ["Tinta complementar de fachada", "Tinta esmalte para gradis e portões", "Mão de obra de arremate de fachada"]
+              }
+            ]
+          }]
+        },
+        {
+          "id": "item-tpl-acab-portao",
+          "versions": [{
+            "number": 1,
+            "date": "2026-05-21",
+            "nome": "Portão, muros - área externa geral",
+            "etapas": [
+              {
+                "id": "e-pm-m9",
+                "mes": "2026-07",
+                "percentual": 50,
+                "orcamentoMaterial": 6000,
+                "orcamentoMaoDeObra": 2250,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Instalação de portão de acesso e muro frontal.",
+                "fisico_items": ["Portão de acesso veicular", "Portão pedonal", "Muro de alvenaria frontal"],
+                "financeiro_items": ["Portão de ferro / alumínio", "Motor de portão automatizado", "Mão de obra de portão e muro"]
+              },
+              {
+                "id": "e-pm-m10",
+                "mes": "2026-08",
+                "percentual": 50,
+                "orcamentoMaterial": 6000,
+                "orcamentoMaoDeObra": 2250,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Área externa: calçamento, jardim e complementos.",
+                "fisico_items": ["Calçada e área de estacionamento", "Jardinagem e paisagismo básico", "Iluminação externa"],
+                "financeiro_items": ["Piso intertravado ou pedra para calçada", "Plantas e paisagismo", "Mão de obra de área externa"]
+              }
+            ]
+          }]
+        },
+        {
+          "id": "item-tpl-acab-outros4",
+          "versions": [{
+            "number": 1,
+            "date": "2026-05-21",
+            "nome": "Outros 4",
+            "etapas": [
+              {
+                "id": "e-o4-m8",
+                "mes": "2026-06",
+                "percentual": 30,
+                "orcamentoMaterial": 3600,
+                "orcamentoMaoDeObra": 0,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Serviços complementares de acabamento: limpeza fina de obra.",
+                "fisico_items": ["Limpeza fina de obra", "Retirada de entulho final"],
+                "financeiro_items": ["Caçamba de entulho", "Produtos de limpeza fina de obra"]
+              },
+              {
+                "id": "e-o4-m9",
+                "mes": "2026-07",
+                "percentual": 35,
+                "orcamentoMaterial": 4200,
+                "orcamentoMaoDeObra": 0,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Complementos de acabamento: espelhos, cabides e fixações.",
+                "fisico_items": ["Instalação de espelhos", "Fixação de acessórios decorativos", "Complementos de acabamento geral"],
+                "financeiro_items": ["Espelhos bisotados de banheiro", "Acessórios e complementos de acabamento"]
+              },
+              {
+                "id": "e-o4-m10",
+                "mes": "2026-08",
+                "percentual": 35,
+                "orcamentoMaterial": 4200,
+                "orcamentoMaoDeObra": 0,
+                "gastoMaterial": 0, "gastoMaoDeObra": 0,
+                "recebidoMaterial": 0, "recebidoMaoDeObra": 0,
+                "valorRecebido": 0, "feito": false, "percentualRealizado": 0,
+                "descricao": "Vistoria final, entrega e documentação da obra.",
+                "fisico_items": ["Vistoria técnica final", "Entrega das chaves e documentação"],
+                "financeiro_items": ["Habite-se e taxas finais", "Laudo técnico de entrega da obra"]
+              }
+            ]
+          }]
+        }
+      ]
+    }
+  ]
+}

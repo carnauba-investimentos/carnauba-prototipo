@@ -1,0 +1,7 @@
+name = "carnauba-api"
+main = "src/index.js"
+compatibility_date = "2024-09-23"
+
+[[kv_namespaces]]
+binding = "CARNAUBA_TEMPLATES"
+id = "7ec4b3debdcd4ff58cf7c9d618eaf9b7"

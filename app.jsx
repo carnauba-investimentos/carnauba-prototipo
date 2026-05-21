@@ -26,6 +26,34 @@ const diffDays = (a, b) => {
   return Math.max(0, Math.round((new Date(b + 'T00:00:00') - new Date(a + 'T00:00:00')) / 86400000));
 };
 
+const addMonths = (mesISO, offset) => {
+  const [y, m] = mesISO.split('-').map(Number);
+  const total = (y * 12 + (m - 1)) + offset;
+  const ny = Math.floor(total / 12);
+  const nm = (total % 12) + 1;
+  return `${ny}-${String(nm).padStart(2, '0')}`;
+};
+
+const shiftTemplateMonths = (grupos, newStartMesISO) => {
+  let earliest = null;
+  for (const g of grupos) for (const it of g.items) for (const v of it.versions) for (const e of v.etapas)
+    if (e.mes && (!earliest || e.mes < earliest)) earliest = e.mes;
+  if (!earliest) return grupos;
+  const [ey, em] = earliest.split('-').map(Number);
+  const [ny, nm] = newStartMesISO.split('-').map(Number);
+  const offset = (ny * 12 + nm - 1) - (ey * 12 + em - 1);
+  return grupos.map(g => ({
+    ...g,
+    items: g.items.map(it => ({
+      ...it,
+      versions: it.versions.map(v => ({
+        ...v,
+        etapas: v.etapas.map(e => ({ ...e, mes: e.mes ? addMonths(e.mes, offset) : null })),
+      })),
+    })),
+  }));
+};
+
 const mesToStartISO = (mes) => mes ? `${mes}-01` : null;
 const mesToEndISO = (mes) => {
   if (!mes) return null;
@@ -101,32 +129,66 @@ const IconSave = () =>
     <rect x="3" y="7.5" width="8" height="4.5" rx="0.5" stroke="currentColor" strokeWidth="1.3" />
   </svg>;
 
-// ── Template persistence ───────────────────────────────────────────
-const TEMPLATE_KEY = 'carnauba_template';
+const IconDownload = () =>
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <path d="M7 1v8M4 6l3 3 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M1 10v1.5A1.5 1.5 0 0 0 2.5 13h9A1.5 1.5 0 0 0 13 11.5V10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+  </svg>;
 
-const saveTemplate = (projectName, grupos) => {
-  localStorage.setItem(TEMPLATE_KEY, JSON.stringify({ projectName, grupos }));
-};
+const IconUpload = () =>
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <path d="M7 9V1M4 4l3-3 3 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M1 10v1.5A1.5 1.5 0 0 0 2.5 13h9A1.5 1.5 0 0 0 13 11.5V10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+  </svg>;
 
-const loadTemplate = () => {
-  try {
-    const raw = localStorage.getItem(TEMPLATE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
-};
+const IconX = () =>
+  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+    <path d="M1 1l8 8M9 1L1 9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+  </svg>;
+
+// ── Template API ───────────────────────────────────────────────────
+const API_BASE = 'https://carnauba-api.cronemberger.workers.dev';
+
+const apiFetchTemplates = () =>
+  fetch(`${API_BASE}/templates`).then(r => r.json());
+
+const apiSaveTemplate = (tpl) =>
+  fetch(`${API_BASE}/templates`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(tpl),
+  });
+
+const apiDeleteTemplate = (id) =>
+  fetch(`${API_BASE}/templates/${encodeURIComponent(id)}`, { method: 'DELETE' });
+
+const normalizeToTemplate = (grupos) =>
+  grupos.map((g, gi) => ({
+    id: `grupo-tpl-${Date.now()}-${gi}`,
+    nome: g.nome,
+    collapsed: false,
+    items: g.items.map((item, ii) => {
+      const latest = item.versions[item.versions.length - 1];
+      const cleanEtapas = (latest.etapas || []).map(e => ({
+        ...e,
+        gastoMaterial: 0, gastoMaoDeObra: 0,
+        recebidoMaterial: 0, recebidoMaoDeObra: 0,
+        valorRecebido: 0,
+        feito: false,
+        percentualRealizado: 0,
+      }));
+      return {
+        id: `item-tpl-${Date.now()}-${gi}-${ii}`,
+        versions: [{ number: 1, date: todayISO(), nome: latest.nome, etapas: cleanEtapas }],
+      };
+    }),
+  }));
 
 
 // ── Sidebar ────────────────────────────────────────────────────────
-const Sidebar = ({ collapsed, onToggle, projectName, onProjectNameChange, onSaveTemplate }) => {
+const Sidebar = ({ collapsed, onToggle, projectName, onProjectNameChange }) => {
   const [editing, setEditing] = useState(false);
-  const [saved, setSaved] = useState(false);
   const inputRef = useRef(null);
-
-  const handleSaveTemplate = () => {
-    onSaveTemplate();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 1500);
-  };
 
   useEffect(() => {
     if (editing && inputRef.current) inputRef.current.focus();
@@ -198,33 +260,6 @@ const Sidebar = ({ collapsed, onToggle, projectName, onProjectNameChange, onSave
             </span>
           }
         </div>
-      </div>
-
-      <div style={{
-        height: 44, display: 'flex', alignItems: 'center',
-        padding: collapsed ? '0 12px' : '0 14px',
-        borderTop: '1px solid rgba(255,255,255,0.08)', flexShrink: 0,
-        justifyContent: collapsed ? 'center' : 'flex-start',
-      }}>
-        <button
-          onClick={handleSaveTemplate}
-          title="Salvar como template"
-          style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            background: 'transparent', border: 'none', cursor: 'pointer',
-            padding: 0, opacity: saved ? 1 : 0.35, transition: 'opacity 0.15s',
-            color: saved ? 'rgba(115,169,199,0.9)' : 'rgba(255,255,255,0.8)',
-          }}
-          onMouseEnter={e => { if (!saved) e.currentTarget.style.opacity = '1'; }}
-          onMouseLeave={e => { if (!saved) e.currentTarget.style.opacity = '0.35'; }}
-        >
-          <IconSave />
-          {!collapsed && (
-            <span style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
-              {saved ? 'Salvo!' : 'Salvar como template'}
-            </span>
-          )}
-        </button>
       </div>
 
       <div style={{
@@ -849,14 +884,105 @@ const DEFAULT_GRUPOS = [
 
 // ── App ────────────────────────────────────────────────────────────
 const App = () => {
-  const _saved = loadTemplate();
-  const [grupos, setGrupos]               = useState(_saved?.grupos      ?? DEFAULT_GRUPOS);
+  const [grupos, setGrupos]               = useState([]);
   const [modalOpen, setModalOpen]         = useState(false);
   const [editingItem, setEditingItem]     = useState(null);
-  const [editingContext, setEditingContext] = useState(null); // { grupoId }
+  const [editingContext, setEditingContext] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [projectName, setProjectName]     = useState(_saved?.projectName ?? 'Projeto');
+  const [projectName, setProjectName]     = useState('Projeto');
   const [vizMode, setVizMode]             = useState('financeiro');
+
+  // ── Template state ──────────────────────────────────────────────
+  const [templates, setTemplates]               = useState([]);
+  const [templatesLoading, setTemplatesLoading] = useState(true);
+  const [templateNameDialog, setTemplateNameDialog] = useState(false);
+  const [pendingTemplateName, setPendingTemplateName] = useState('');
+  const [loadMonthTpl, setLoadMonthTpl]         = useState(null);
+  const [pendingLoadMonth, setPendingLoadMonth] = useState('');
+  const [loadMonthError, setLoadMonthError]     = useState('');
+  const [deleteConfirmTplId, setDeleteConfirmTplId] = useState(null);
+  const importFileRef = useRef(null);
+
+  useEffect(() => {
+    apiFetchTemplates()
+      .then(data => { setTemplates(Array.isArray(data) ? data : []); })
+      .catch(() => {})
+      .finally(() => setTemplatesLoading(false));
+  }, []);
+
+  const refreshTemplates = () =>
+    apiFetchTemplates().then(data => setTemplates(Array.isArray(data) ? data : [])).catch(() => {});
+
+  const handleOpenSaveTemplateDialog = () => {
+    setPendingTemplateName('');
+    setTemplateNameDialog(true);
+  };
+
+  const handleConfirmSaveTemplate = async () => {
+    const name = pendingTemplateName.trim();
+    if (!name) return;
+    const tpl = {
+      id: `tpl-${Date.now()}`,
+      name,
+      savedAt: new Date().toISOString(),
+      grupos: normalizeToTemplate(grupos),
+    };
+    setTemplateNameDialog(false);
+    setPendingTemplateName('');
+    // Optimistic update — KV list() is eventually consistent, so show immediately
+    setTemplates(prev => [tpl, ...prev]);
+    await apiSaveTemplate(tpl).catch(() => {});
+    setTimeout(refreshTemplates, 3000);
+  };
+
+  const handleConfirmLoadWithMonth = () => {
+    if (!loadMonthTpl) return;
+    const match = pendingLoadMonth.match(/^(\d{2})\/(\d{4})$/);
+    if (!match) { setLoadMonthError('Formato inválido. Use MM/AAAA.'); return; }
+    const [, mm, yyyy] = match;
+    const mesISO = `${yyyy}-${mm}`;
+    const shifted = shiftTemplateMonths(loadMonthTpl.grupos.map(g => ({ ...g, collapsed: true })), mesISO);
+    setGrupos(shifted);
+    setLoadMonthTpl(null);
+    setPendingLoadMonth('');
+    setLoadMonthError('');
+  };
+
+  const handleConfirmDeleteTemplate = async () => {
+    if (!deleteConfirmTplId) return;
+    const id = deleteConfirmTplId;
+    setDeleteConfirmTplId(null);
+    // Optimistic update — remove immediately, sync after KV propagates
+    setTemplates(prev => prev.filter(t => t.id !== id));
+    await apiDeleteTemplate(id).catch(() => {});
+    setTimeout(refreshTemplates, 3000);
+  };
+
+  const handleExportTemplates = () => {
+    const blob = new Blob([JSON.stringify(templates, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'carnauba-templates.json'; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportTemplates = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      try {
+        const imported = JSON.parse(ev.target.result);
+        const arr = Array.isArray(imported) ? imported : [imported];
+        const existingIds = new Set(templates.map(t => t.id));
+        const newOnes = arr.filter(t => t?.id && t?.name && !existingIds.has(t.id));
+        await Promise.all(newOnes.map(t => apiSaveTemplate(t))).catch(() => {});
+        refreshTemplates();
+      } catch {}
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
 
   const handleOpenItem = (item, grupoId) => {
     const resolvedGrupoId = grupoId || grupos.find(g => g.items.some(i => i.id === item.id))?.id;
@@ -959,7 +1085,6 @@ const App = () => {
         onToggle={() => setSidebarCollapsed(v => !v)}
         projectName={projectName}
         onProjectNameChange={setProjectName}
-        onSaveTemplate={() => saveTemplate(projectName, grupos)}
       />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
@@ -1009,7 +1134,236 @@ const App = () => {
             vizMode={vizMode}
           />
         </div>
+
+        {/* Cronograma footer */}
+        <div style={{
+          height: 52, flexShrink: 0,
+          borderTop: '1px solid rgba(0,0,0,0.07)',
+          background: 'var(--color-white)',
+          display: 'flex', alignItems: 'center',
+          padding: '0 16px', gap: 10,
+        }}>
+          {/* Template pills */}
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6, overflowX: 'auto', minWidth: 0 }}>
+            {templatesLoading && (
+              <span style={{ fontSize: 11, color: 'var(--color-gray-400)', whiteSpace: 'nowrap' }}>Carregando templates…</span>
+            )}
+            {!templatesLoading && templates.length === 0 && (
+              <span style={{ fontSize: 11, color: 'var(--color-gray-400)', whiteSpace: 'nowrap' }}>Nenhum template salvo</span>
+            )}
+            {templates.map(tpl => (
+              <div key={tpl.id} style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                background: 'rgba(115,169,199,0.13)', borderRadius: 100,
+                padding: '3px 6px 3px 10px', flexShrink: 0,
+              }}>
+                <button
+                  onClick={() => { setLoadMonthTpl(tpl); setPendingLoadMonth(''); setLoadMonthError(''); }}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    fontSize: 11, fontWeight: 500, color: 'var(--color-navy)',
+                    padding: 0, whiteSpace: 'nowrap',
+                  }}
+                >{tpl.name}</button>
+                <button
+                  onClick={() => setDeleteConfirmTplId(tpl.id)}
+                  title="Deletar template"
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: 'var(--color-gray-400)', padding: '1px 2px',
+                    display: 'flex', alignItems: 'center',
+                    borderRadius: 3, transition: 'color 0.12s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.color = 'var(--color-red, #e05)'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'var(--color-gray-400)'}
+                ><IconX /></button>
+              </div>
+            ))}
+          </div>
+
+          {/* Right actions */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+            <button
+              onClick={handleExportTemplates}
+              title="Exportar templates"
+              disabled={templates.length === 0}
+              style={{
+                background: 'none', border: '1px solid var(--color-gray-200)',
+                borderRadius: 6, cursor: templates.length === 0 ? 'not-allowed' : 'pointer',
+                color: templates.length === 0 ? 'var(--color-gray-300)' : 'var(--color-gray-500)',
+                padding: '5px 7px', display: 'flex', alignItems: 'center',
+                transition: 'border-color 0.12s, color 0.12s',
+              }}
+              onMouseEnter={e => { if (templates.length > 0) { e.currentTarget.style.borderColor = 'var(--color-blue)'; e.currentTarget.style.color = 'var(--color-blue)'; } }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-gray-200)'; e.currentTarget.style.color = templates.length === 0 ? 'var(--color-gray-300)' : 'var(--color-gray-500)'; }}
+            ><IconDownload /></button>
+
+            <input ref={importFileRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleImportTemplates} />
+            <button
+              onClick={() => importFileRef.current?.click()}
+              title="Importar templates"
+              style={{
+                background: 'none', border: '1px solid var(--color-gray-200)',
+                borderRadius: 6, cursor: 'pointer',
+                color: 'var(--color-gray-500)',
+                padding: '5px 7px', display: 'flex', alignItems: 'center',
+                transition: 'border-color 0.12s, color 0.12s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-blue)'; e.currentTarget.style.color = 'var(--color-blue)'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-gray-200)'; e.currentTarget.style.color = 'var(--color-gray-500)'; }}
+            ><IconUpload /></button>
+
+            <button
+              onClick={handleOpenSaveTemplateDialog}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: 'var(--color-navy)', color: 'white',
+                border: 'none', borderRadius: 6, cursor: 'pointer',
+                padding: '6px 12px', fontSize: 12, fontWeight: 600,
+                fontFamily: 'var(--font-display)', whiteSpace: 'nowrap',
+                transition: 'opacity 0.15s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+              onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+            >
+              <IconSave /><span>Salvar como Template</span>
+            </button>
+          </div>
+        </div>
       </div>
+
+      {/* Template name dialog */}
+      {templateNameDialog && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200,
+        }} onClick={() => setTemplateNameDialog(false)}>
+          <div style={{
+            background: 'var(--color-white)', borderRadius: 10, padding: '24px 28px',
+            minWidth: 320, boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--color-navy)', marginBottom: 14, fontFamily: 'var(--font-display)' }}>
+              Salvar como Template
+            </div>
+            <input
+              autoFocus
+              value={pendingTemplateName}
+              onChange={e => setPendingTemplateName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleConfirmSaveTemplate(); if (e.key === 'Escape') setTemplateNameDialog(false); }}
+              placeholder="Nome do template…"
+              style={{
+                width: '100%', boxSizing: 'border-box',
+                border: '1px solid var(--color-gray-200)', borderRadius: 6,
+                padding: '8px 10px', fontSize: 13, fontFamily: 'inherit',
+                outline: 'none', marginBottom: 16,
+              }}
+            />
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button onClick={() => setTemplateNameDialog(false)} style={{
+                background: 'none', border: '1px solid var(--color-gray-200)',
+                borderRadius: 6, padding: '6px 14px', fontSize: 12, cursor: 'pointer',
+                color: 'var(--color-gray-500)',
+              }}>Cancelar</button>
+              <button onClick={handleConfirmSaveTemplate} disabled={!pendingTemplateName.trim()} style={{
+                background: 'var(--color-navy)', color: 'white', border: 'none',
+                borderRadius: 6, padding: '6px 16px', fontSize: 12, fontWeight: 600,
+                cursor: pendingTemplateName.trim() ? 'pointer' : 'not-allowed',
+                opacity: pendingTemplateName.trim() ? 1 : 0.5,
+                fontFamily: 'var(--font-display)',
+              }}>Salvar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Load template — month picker */}
+      {loadMonthTpl && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200,
+        }} onClick={() => setLoadMonthTpl(null)}>
+          <div style={{
+            background: 'var(--color-white)', borderRadius: 10, padding: '24px 28px',
+            minWidth: 340, maxWidth: 420, boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--color-navy)', marginBottom: 6, fontFamily: 'var(--font-display)' }}>
+              Carregar Template
+            </div>
+            <p style={{ fontSize: 13, color: 'var(--color-gray-600)', marginBottom: 16, lineHeight: 1.5, margin: '0 0 16px' }}>
+              Carregar <strong>«{loadMonthTpl.name}»</strong>. Isso substituirá o cronograma atual.
+            </p>
+            <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-gray-500)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>
+              Mês de início das obras (MM/AAAA)
+            </label>
+            <input
+              autoFocus
+              value={pendingLoadMonth}
+              onChange={e => { setPendingLoadMonth(e.target.value); setLoadMonthError(''); }}
+              onKeyDown={e => { if (e.key === 'Enter') handleConfirmLoadWithMonth(); if (e.key === 'Escape') setLoadMonthTpl(null); }}
+              placeholder="ex: 11/2025"
+              maxLength={7}
+              style={{
+                width: '100%', boxSizing: 'border-box',
+                border: `1px solid ${loadMonthError ? '#dc2626' : 'var(--color-gray-200)'}`,
+                borderRadius: 6, padding: '8px 10px', fontSize: 14,
+                fontFamily: 'inherit', outline: 'none', marginBottom: 4,
+              }}
+            />
+            {loadMonthError && (
+              <p style={{ fontSize: 11, color: '#dc2626', margin: '0 0 12px' }}>{loadMonthError}</p>
+            )}
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
+              <button onClick={() => setLoadMonthTpl(null)} style={{
+                background: 'none', border: '1px solid var(--color-gray-200)',
+                borderRadius: 6, padding: '6px 14px', fontSize: 12, cursor: 'pointer',
+                color: 'var(--color-gray-500)',
+              }}>Cancelar</button>
+              <button onClick={handleConfirmLoadWithMonth} disabled={!pendingLoadMonth.trim()} style={{
+                background: 'var(--color-navy)', color: 'white', border: 'none',
+                borderRadius: 6, padding: '6px 16px', fontSize: 12, fontWeight: 600,
+                cursor: pendingLoadMonth.trim() ? 'pointer' : 'not-allowed',
+                opacity: pendingLoadMonth.trim() ? 1 : 0.5,
+                fontFamily: 'var(--font-display)',
+              }}>Carregar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete template confirmation */}
+      {deleteConfirmTplId && (() => {
+        const tpl = templates.find(t => t.id === deleteConfirmTplId);
+        return (
+          <div style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200,
+          }} onClick={() => setDeleteConfirmTplId(null)}>
+            <div style={{
+              background: 'var(--color-white)', borderRadius: 10, padding: '24px 28px',
+              minWidth: 320, maxWidth: 400, boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+            }} onClick={e => e.stopPropagation()}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--color-navy)', marginBottom: 10, fontFamily: 'var(--font-display)' }}>
+                Deletar Template
+              </div>
+              <p style={{ fontSize: 13, color: 'var(--color-gray-600)', marginBottom: 20, lineHeight: 1.5 }}>
+                Deletar o template <strong>«{tpl?.name}»</strong>? Esta ação não pode ser desfeita.
+              </p>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                <button onClick={() => setDeleteConfirmTplId(null)} style={{
+                  background: 'none', border: '1px solid var(--color-gray-200)',
+                  borderRadius: 6, padding: '6px 14px', fontSize: 12, cursor: 'pointer',
+                  color: 'var(--color-gray-500)',
+                }}>Cancelar</button>
+                <button onClick={handleConfirmDeleteTemplate} style={{
+                  background: '#dc2626', color: 'white', border: 'none',
+                  borderRadius: 6, padding: '6px 16px', fontSize: 12, fontWeight: 600,
+                  cursor: 'pointer', fontFamily: 'var(--font-display)',
+                }}>Deletar</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {editingItem
         ? <ItemModal item={editingItem} isOpen={modalOpen} onClose={() => setModalOpen(false)} onSave={handleSave} onDelete={handleDeleteItem} vizMode={vizMode} />

@@ -1,2 +1,16 @@
 # Large binary files not needed in version control
 _infos/
+
+# Dependencies
+node_modules/
+
+# Wrangler / Cloudflare Workers build artifacts
+.wrangler/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+*.swp
+

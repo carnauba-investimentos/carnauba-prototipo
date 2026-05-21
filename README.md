@@ -13,39 +13,37 @@ Aplicação web de gerenciamento de cronograma e orçamento de projetos de inves
 - **Campo `percentualRealizado`** — adicionado ao schema de etapa (0–100); no modo Físico, substitui `feito` como indicador de conclusão: `percentualRealizado >= 100` = etapa concluída; `feito` é ignorado em todos os cálculos Físicos
 - **Lógica de alerta unificada** — dois gatilhos independentes por modo:
   - *Físico:* `etapaShowsWarning(e)` — `mês encerrado && percentualRealizado < 100`
-  - *Financeiro:* `hasEtapaFinancialOverrun(etapas)` — qualquer etapa com `gasto > recebido` (recebido = 0 com gasto > 0 também dispara); comparação por etapa, não pelo total acumulado; usada por `ItemCronograma`, `GrupoHeader`, `GrupoItensCronograma`, `GanttItemBar` e `GanttGroupBar`; `forceWarn` em `buildFinancialSegments` e `buildSegments` propaga o alerta para os segmentos da barra mesmo quando o total acumulado não ultrapassaria o recebido
-- **Badge RECEBIDO clicável no MonthCard** — no modo Financeiro, clicar no badge RECEBIDO abre um modal para inserir `recebidoMaterial` e `recebidoMaoDeObra` separadamente; o total exibido no badge é derivado da soma desses dois campos (com fallback para o campo legado `valorRecebido`); os subtítulos abaixo dos campos de gasto exibem "R$ … recebidos" com os valores correspondentes
-- **ProgressCard — componente paramétrico unificado** — substitui todos os componentes de barra anteriores; recebe `segments[]` com cor e rótulo por camada, suporta modo expansível com corpo e rodapé, título editável por duplo-clique e drag-and-drop integrado
-- **Cronograma Gantt interativo** — visualização em meses com barras de progresso por grupo e por item, usando `ProgressCard` com segmentos por VM; alturas reduzidas e títulos posicionados fora dos cards para melhor legibilidade
-- **Título do item no Gantt** — cada `GanttItemCard` exibe o nome do item à esquerda das barras mensais (fora do card); as barras permanecem sempre alinhadas à grade de meses independentemente do título; `GanttGroupCard` exibe o nome do grupo na mesma posição
-- **Grupos de itens** — itens organizados em grupos recolhíveis com drag-and-drop para reordenação
-- **Controle de versões** — cada edição pode gerar uma nova versão do item, preservando o histórico completo
+  - *Financeiro:* `hasEtapaFinancialOverrun(etapas)` — qualquer etapa com `gasto > recebido` (recebido = 0 com gasto > 0 também dispara)
+- **Badge RECEBIDO clicável no MonthCard** — no modo Financeiro, clicar no badge RECEBIDO abre um modal para inserir `recebidoMaterial` e `recebidoMaoDeObra` separadamente
+- **ProgressCard — componente paramétrico unificado** — recebe `segments[]` com cor e rótulo por camada, suporta modo expansível com corpo e rodapé, título editável por duplo-clique e drag-and-drop integrado
+- **Cronograma Gantt interativo** — visualização em meses com barras de progresso por grupo e por item; grupos recolhíveis com drag-and-drop para reordenação
+- **Controle de versões** — cada edição pode gerar uma nova versão do item, preservando o histórico completo; o Gantt exibe V1 e a versão atual lado a lado
 - **Rastreamento financeiro** — orçamento previsto (material + mão de obra) vs. realizado por etapa mensal
-- **Linha do hoje** — marcador visual da data atual no cronograma
-- **Sidebar recolhível** — com nome de projeto editável
-- **Salvar como template** — persiste o estado completo (grupos, itens, etapas, nome do projeto) no `localStorage` e restaura automaticamente ao reabrir o app
+- **Sistema de templates compartilhados** — salva configurações de cronograma como templates nomeados, armazenados na nuvem e acessíveis a todos os usuários; inclui template pré-carregado de Residência Unifamiliar baseado em estimativas de obra
 
 ## Estrutura do Projeto
 
 ```
-carnauba-prototipo/
-├── index.html               # Ponto de entrada — carrega React, Babel e CSS
-├── app.jsx                  # App, Sidebar, GanttChart, GanttGroupCard, GanttItemCard,
-│                            #   GanttGroupBar, GanttItemBar, VmToggle, ícones, persistência
-├── cronograma-itens.jsx     # ProgressCard, ItemCronograma, GrupoHeader, GrupoItensCronograma,
-│                            #   GroupFooter, helpers de VM (buildSegments, getRealizadoPct,
-│                            #   getAtivoPct, getOverduePct, etapaIsDone, etapaShowsWarning…),
-│                            #   constantes de cor (VM_NEUTRAL, VM_FINANCEIRO, VM_FISICO, VM_WARNING)
-├── drawer-header.jsx        # DrawerHeader, ValueTag, SegBar — componentes de cabeçalho paramétrico
-├── item-modal.jsx           # ItemDrawer — edição de itens existentes, histórico de versões,
-│                            #   modos Físico e Financeiro
-├── novo-item-drawer.jsx     # Drawer de criação de novos itens com formulário em etapas
-├── month-card.jsx           # MonthCard — card de etapa mensal com modos Físico e Financeiro,
-│                            #   barras cumulativas e lógica de alerta
-└── design-system/           # Submodule → carnauba-investimentos/carnauba-design-system
-    ├── colors_and_type.css  # Tokens de cor, tipografia e espaçamento
-    ├── fonts/               # Família tipográfica Aptos completa
-    └── assets/              # Logotipos SVG (claro e escuro)
+carnauba/
+├── index.html                   # Ponto de entrada — carrega React, Babel e CSS
+├── app.jsx                      # App, Sidebar, GanttChart, ícones, persistência,
+│                                #   lógica de templates e helpers de data
+├── cronograma-itens.jsx         # ProgressCard, ItemCronograma, GrupoHeader,
+│                                #   GrupoItensCronograma, GroupFooter, helpers de VM
+├── drawer-header.jsx            # DrawerHeader, ValueTag, SegBar
+├── item-modal.jsx               # ItemDrawer — edição, histórico de versões
+├── novo-item-drawer.jsx         # Drawer de criação de novos itens
+├── month-card.jsx               # MonthCard — etapa mensal com modos Físico/Financeiro
+├── design-system/               # Submodule → carnauba-investimentos/carnauba-design-system
+│   ├── colors_and_type.css
+│   ├── fonts/
+│   └── assets/
+├── templates/
+│   └── carnauba-residencia.json # Template pré-carregado: Residência Unifamiliar
+└── carnauba-api/                # Cloudflare Worker — backend de templates
+    ├── src/index.js
+    ├── wrangler.toml
+    └── package.json
 ```
 
 ## Tecnologias
@@ -56,29 +54,114 @@ carnauba-prototipo/
 | JSX | Babel Standalone 7.29.0 |
 | Estilos | CSS puro com variáveis customizadas (via Design System) |
 | Build | Nenhum — executa direto no navegador |
-| Backend | Nenhum — SPA estática |
+| Backend | Cloudflare Workers + KV (templates compartilhados) |
+
+## Backend — Cloudflare Workers + KV
+
+O sistema de templates usa um Cloudflare Worker como API REST mínima, com persistência em Cloudflare KV. Templates salvos por qualquer usuário ficam disponíveis para todos os usuários do app.
+
+### Arquitetura
+
+```
+Browser (React SPA)
+  ↕ fetch com CORS
+Cloudflare Worker  →  KV namespace: CARNAUBA_TEMPLATES
+  GET  /templates          → lista todos os templates
+  POST /templates          → cria / sobrescreve um template
+  DELETE /templates/:id    → remove um template
+```
+
+- **Worker:** `carnauba-api/src/index.js` — ~60 linhas, handler `fetch` nativo (sem framework)
+- **KV namespace:** `CARNAUBA_TEMPLATES` — cada template é uma entrada separada (chave = `id`); evita race conditions em saves/deletes simultâneos
+- **CORS:** `Access-Control-Allow-Origin: *` em todas as respostas
+- **URL do Worker:** `https://carnauba-api.cronemberger.workers.dev`
+
+### Configuração local e deploy
+
+Requer [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/):
+
+```bash
+cd carnauba-api
+npm install
+npx wrangler login
+npx wrangler deploy
+```
+
+Para criar um novo namespace KV (somente na primeira vez):
+
+```bash
+npx wrangler kv namespace create CARNAUBA_TEMPLATES
+# copie o id gerado para wrangler.toml
+```
+
+### Seed de templates
+
+Para popular o template de Residência Unifamiliar no KV:
+
+```bash
+cd carnauba-api
+npx wrangler kv key put "tpl-carnauba-residencia-v1" \
+  --path="../templates/carnauba-residencia.json" \
+  --namespace-id=7ec4b3debdcd4ff58cf7c9d618eaf9b7
+```
+
+## Sistema de Templates
+
+### Rodapé do cronograma
+
+Um rodapé fixo (52 px) abaixo do Gantt exibe:
+- **Pílulas de templates** (alinhadas à direita) — clique no nome carrega o template; `×` deleta após confirmação
+- **Exportar (↓)** — baixa todos os templates como `carnauba-templates.json`
+- **Importar (↑)** — lê um arquivo `.json` e adiciona templates novos (não duplica por `id`)
+- **Salvar como Template** — abre diálogo para nomear e salvar o cronograma atual; todos os itens são normalizados para V1 com dados de execução zerados (gasto, recebido, feito, percentualRealizado)
+
+### Carregar template com ajuste de calendário
+
+Ao carregar qualquer template, o app pergunta o **mês de início das obras (MM/AAAA)**. O algoritmo:
+
+1. Encontra o mês mais antigo entre todas as etapas do template
+2. Calcula o offset em meses entre esse mês e o mês escolhido pelo usuário
+3. Desloca todos os campos `mes` de todas as etapas pelo offset calculado
+
+Isso permite reutilizar o template em projetos com calendários diferentes sem edição manual.
+
+### Template: Residência Unifamiliar
+
+Template pré-carregado baseado em estimativas de obra (`templates/carnauba-residencia.json`), com:
+
+- **5 grupos:** Preliminares, Fundação, Estrutura, Instalações, Acabamento
+- **26 itens** com orçamento dividido em `orcamentoMaterial` e `orcamentoMaoDeObra`
+- **83 etapas** distribuídas em 10 meses (base: nov/25 – ago/26)
+- `fisico_items` e `financeiro_items` preenchidos por etapa
+
+| Grupo | Itens | Orçamento total |
+|---|---|---|
+| Preliminares | Limpeza do Terreno | R$ 65.500 |
+| Fundação | Aço Estrutural, Concreto, Fôrmas, Escavação, Outros 1 | R$ 187.500 |
+| Estrutura | Alvenaria, Laje, Aço, Escoramento, Concreto, Telhado, Outros 2 | R$ 540.000 |
+| Instalações | Elétricas, Hidráulicas, Gás, Bombeiro Civil | R$ 158.000 |
+| Acabamento | 13 itens de acabamento | R$ 480.000 |
 
 ## Design System
 
-Os tokens visuais (cores, tipografia, espaçamento, sombras) vêm do repositório [carnauba-design-system](https://github.com/carnauba-investimentos/carnauba-design-system), incluído aqui como git submodule em `design-system/`. O arquivo `design-system/colors_and_type.css` é a única fonte de verdade para estilos — nunca edite diretamente no prototipo.
+Os tokens visuais (cores, tipografia, espaçamento, sombras) vêm do repositório [carnauba-design-system](https://github.com/carnauba-investimentos/carnauba-design-system), incluído aqui como git submodule em `design-system/`. O arquivo `design-system/colors_and_type.css` é a única fonte de verdade para estilos.
 
 - **Paleta primária:** Navy `#1B3C5F`, Blue `#73A9C7`, Sage `#A9C8BF`
 - **Semânticas:** Success `#3A8F6A`, Warning `#C08A2A`, Error `#B84040`
 - **Tipografia:** família Aptos (Display, Standard, Narrow, Serif, Mono) em pesos 300–900
-- **Escala de espaçamento:** 4 px a 96 px
 
-As paletas de VM são definidas em `cronograma-itens.jsx` como constantes exportadas via `window`:
+As paletas de VM são definidas em `cronograma-itens.jsx`:
 
 | Constante | Uso | Cor principal |
 |---|---|---|
 | `VM_FINANCEIRO` | Modo Financeiro (verde) | `#389579` (gasto), `#92B7AD` (recebido) |
 | `VM_FISICO` | Modo Físico (azul) | `#3289C0` (realizado), `#8BBBD6` (ativo/planejado) |
-| `VM_NEUTRAL` | Neutros compartilhados | `#BDC6D6` (trilho), `#DFE4EA` (corpo), `#EDF1F6` (fundo) |
+| `VM_NEUTRAL` | Neutros compartilhados | `#BDC6D6` (trilho), `#DFE4EA` (corpo) |
 | `VM_WARNING` | Alerta (âmbar) | `#C08A2A` (realizado/gasto), `#C8A05A` (ativo/recebido) |
 
 ## Como clonar (nova máquina)
 
-O projeto usa um git submodule. Use a flag `--recurse-submodules` para clonar tudo de uma vez:
+O projeto usa um git submodule. Use `--recurse-submodules` para clonar tudo de uma vez:
 
 ```bash
 git clone --recurse-submodules https://github.com/carnauba-investimentos/carnauba-prototipo.git
@@ -106,18 +189,16 @@ npx serve .
 
 **Com VS Code:** instale a extensão [Live Server](https://marketplace.visualstudio.com/items?itemName=ritwickdey.LiveServer) e clique em *Go Live*.
 
-Abra `http://localhost:8080` (ou a porta configurada) no navegador.
+Abra `http://localhost:8080` no navegador.
 
-> **Nota:** o arquivo `index.html` não pode ser aberto diretamente via `file://` devido às restrições de CORS no carregamento de módulos JS locais. Use sempre um servidor HTTP local.
+> **Nota:** o arquivo `index.html` não pode ser aberto diretamente via `file://` devido às restrições de CORS. Use sempre um servidor HTTP local.
 
 ## Atualizar o Design System
-
-Quando o repositório `carnauba-design-system` receber atualizações, execute dentro desta pasta:
 
 ```bash
 git submodule update --remote design-system
 git add design-system
-git commit -m "Update design system to latest"
+git commit -m "chore: update design system to latest"
 git push
 ```
 
@@ -132,7 +213,7 @@ Grupo
     └── Item
         ├── id
         └── versions[]
-            ├── number          — número da versão
+            ├── number          — número da versão (1, 2, 3…)
             ├── date            — data de criação (ISO)
             ├── nome            — nome do item nesta versão
             └── etapas[]
@@ -142,18 +223,31 @@ Grupo
                 ├── orcamentoMaterial    — orçado: material (BRL)
                 ├── orcamentoMaoDeObra   — orçado: mão de obra (BRL)
                 ├── descricao            — descrição das atividades
-                ├── feito                — etapa concluída (boolean, usado apenas no modo Financeiro)
+                ├── feito                — concluída (boolean; modo Financeiro)
                 ├── gastoMaterial        — realizado: material (BRL)
                 ├── gastoMaoDeObra       — realizado: mão de obra (BRL)
-                ├── valorRecebido        — valor recebido (BRL) — campo legado; substituído por recebidoMaterial + recebidoMaoDeObra; mantido para compatibilidade com dados existentes
-                ├── recebidoMaterial     — recebido: material (BRL) — inserido via modal no badge RECEBIDO
-                ├── recebidoMaoDeObra    — recebido: mão de obra (BRL) — inserido via modal no badge RECEBIDO
-                └── percentualRealizado  — % das atividades realizadas no mês (0–100, modo Físico)
+                ├── valorRecebido        — campo legado (substituído pelos dois abaixo)
+                ├── recebidoMaterial     — recebido: material (BRL)
+                ├── recebidoMaoDeObra    — recebido: mão de obra (BRL)
+                ├── percentualRealizado  — % realizado no mês (0–100; modo Físico)
+                ├── fisico_items[]       — tags de atividades físicas do mês
+                └── financeiro_items[]   — tags de itens financeiros do mês
 ```
 
-### Template (localStorage)
+### Formato do template (Cloudflare KV)
 
-Ao clicar em **Salvar como template** na sidebar, o estado inteiro é serializado como JSON na chave `carnauba_template` do `localStorage`. Na próxima abertura, o app restaura automaticamente grupos, itens e nome do projeto a partir desta chave; se ausente, usa os dados padrão embutidos no código.
+Cada entrada no KV corresponde a um template, com chave = `id`:
+
+```json
+{
+  "id": "tpl-...",
+  "name": "Nome do template",
+  "savedAt": "2026-05-21T12:00:00.000Z",
+  "grupos": [ ... ]
+}
+```
+
+Ao salvar como template, todos os itens são normalizados: versão reduzida a V1, campos de execução zerados (`gastoMaterial`, `gastoMaoDeObra`, `recebidoMaterial`, `recebidoMaoDeObra`, `valorRecebido` → 0; `feito` → false; `percentualRealizado` → 0). IDs de grupos e itens são regenerados para evitar colisões.
 
 ## Localização
 
