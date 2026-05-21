@@ -332,7 +332,7 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
     } else {
       const budget   = (Number(etapa.orcamentoMaterial) || 0) + (Number(etapa.orcamentoMaoDeObra) || 0);
       const gasto    = (Number(etapa.gastoMaterial) || 0) + (Number(etapa.gastoMaoDeObra) || 0);
-      const recebido = Number(etapa.valorRecebido) || 0;
+      const recebido = etapaRecebido(etapa);
       segments = buildFinancialSegments(budget, recebido, gasto);
       const _b = budget, _g = gasto, _r = recebido;
       return (
@@ -389,23 +389,26 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
         { pct: rp,  bg: fp.complete,    label: rp > 0 ? `${Math.round(rp)}%` : null, labelColor: fp.text1 },
       ];
     } else {
-      let budget = 0, recebidoSum = 0, gasto = 0;
+      let budget = 0, recebidoSum = 0, gasto = 0, hasMonthOverrun = false;
       grupo.items.forEach(item => {
         const latest = item.versions[item.versions.length - 1];
         latest.etapas.filter(e => e.mes === mes).forEach(e => {
           hasEtapas   = true;
           budget      += (Number(e.orcamentoMaterial) || 0) + (Number(e.orcamentoMaoDeObra) || 0);
           gasto       += (Number(e.gastoMaterial) || 0) + (Number(e.gastoMaoDeObra) || 0);
-          recebidoSum += Number(e.valorRecebido) || 0;
+          recebidoSum += etapaRecebido(e);
+          const eRec = etapaRecebido(e);
+          const eGas = (Number(e.gastoMaterial)||0) + (Number(e.gastoMaoDeObra)||0);
+          if (eGas > eRec) hasMonthOverrun = true;
         });
       });
       if (!hasEtapas) return null;
-      segments = buildFinancialSegments(budget, recebidoSum, gasto);
+      segments = buildFinancialSegments(budget, recebidoSum, gasto, hasMonthOverrun);
       const barLeft  = col.x - groupOriginX + CARD_PAD + 8;
       const barWidth = col.width - 16;
       return (
         <div style={{ position: 'absolute', left: barLeft, width: barWidth, height: GANTT_BAR_H, top: '50%', transform: 'translateY(-50%)' }}>
-          <Tooltip solicitado={budget} recebido={recebidoSum} gasto={gasto} warn={gasto > recebidoSum} wrapperStyle={{ height: GANTT_BAR_H }}>
+          <Tooltip solicitado={budget} recebido={recebidoSum} gasto={gasto} warn={hasMonthOverrun || gasto > recebidoSum} wrapperStyle={{ height: GANTT_BAR_H }}>
             <div style={{ height: GANTT_BAR_H, borderRadius: 8, overflow: 'hidden' }}>
               <ProgressCard segments={segments} minHeight={GANTT_BAR_H} borderRadius={8} />
             </div>
@@ -816,7 +819,7 @@ const DEFAULT_ITEMS = [
           feito: false,
           gastoMaterial: '',
           gastoMaoDeObra: '',
-          valorRecebido: '',
+          valorRecebido: '', recebidoMaterial: '', recebidoMaoDeObra: '',
         },
         {
           id: 'e-default-2',
@@ -828,7 +831,7 @@ const DEFAULT_ITEMS = [
           feito: false,
           gastoMaterial: '',
           gastoMaoDeObra: '',
-          valorRecebido: '',
+          valorRecebido: '', recebidoMaterial: '', recebidoMaoDeObra: '',
         },
       ],
     }],

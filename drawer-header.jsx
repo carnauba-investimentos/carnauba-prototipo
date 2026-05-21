@@ -260,7 +260,7 @@ const Tooltip = ({ children, solicitado = 0, recebido = 0, gasto = 0, warn = fal
     const captured = el.getBoundingClientRect();
     timerRef.current = setTimeout(() => {
       if (!window.__tooltipDragBlocked) setRect(captured);
-    }, 500);
+    }, 1000);
   };
   const show  = (e) => scheduleShow(e.currentTarget);
   const move  = (e) => { if (!rect) scheduleShow(e.currentTarget); };

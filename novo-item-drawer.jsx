@@ -22,7 +22,8 @@ const niGenEtapas = (start, end, existing = []) => {
       id: `e${Date.now()}${Math.random().toString(36).slice(2,5)}`,
       mes, percentual: '', orcamentoMaterial: '', orcamentoMaoDeObra: '',
       descricao: '', feito: false, gastoMaterial: '', gastoMaoDeObra: '',
-      valorRecebido: '', percentualRealizado: 0,
+      valorRecebido: '', recebidoMaterial: '', recebidoMaoDeObra: '',
+      percentualRealizado: 0, financeiro_items: [], fisico_items: [],
     });
     if (++m > 12) { m = 1; y++; }
   }
@@ -51,17 +52,81 @@ const NiFieldRow = ({ children, onCommit, shouldCommit, style: extraStyle, ...re
   </div>
 );
 
+// ── NiTagInput ────────────────────────────────────────────────────────
+const NiTagInput = ({ value = [], onChange, onCommit, placeholder }) => {
+  const [input, setInput] = useStateNI('');
+
+  const addTag = () => {
+    const tag = input.trim();
+    if (tag) onChange([...value, tag]);
+    setInput('');
+  };
+
+  return (
+    <div>
+      {value.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+          {value.map((tag, i) => (
+            <span key={i} style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              background: 'var(--color-gray-100)', border: '1px solid var(--color-gray-200)',
+              borderRadius: 99, padding: '2px 8px 2px 10px',
+              fontSize: 12, fontFamily: 'var(--font-body)', color: 'var(--color-navy)',
+            }}>
+              {tag}
+              <button
+                onMouseDown={e => { e.preventDefault(); onChange(value.filter((_, idx) => idx !== i)); }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, lineHeight: 1,
+                  color: 'var(--color-navy-50)', fontSize: 14, display: 'flex' }}
+              >×</button>
+            </span>
+          ))}
+        </div>
+      )}
+      <NiFieldRow
+        shouldCommit={() => value.length > 0}
+        onCommit={onCommit}
+        style={{ borderBottom: '2px solid var(--color-navy-20)', transition: 'border-color 0.15s' }}
+        onFocusCapture={e => { e.currentTarget.style.borderBottomColor = 'var(--color-blue)'; }}
+        onBlurCapture={e => {
+          if (!e.currentTarget.contains(e.relatedTarget))
+            e.currentTarget.style.borderBottomColor = 'var(--color-navy-20)';
+        }}
+      >
+        <input
+          type="text"
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              if (input.trim()) addTag();
+              else if (value.length > 0) onCommit();
+            }
+          }}
+          placeholder={value.length > 0 ? 'Adicionar mais… (Enter)' : placeholder}
+          style={{
+            border: 'none', outline: 'none', width: '100%',
+            fontSize: 13, fontFamily: 'var(--font-body)', color: 'var(--color-navy)',
+            background: 'transparent', padding: '4px 0',
+          }}
+        />
+      </NiFieldRow>
+    </div>
+  );
+};
+
 // ── NiMonthBox ────────────────────────────────────────────────────────
 const NiMonthBox = ({ etapa, nome, index, isOpen, isDone, isLocked, onChange, onAdvance, onEdit }) => {
-  // Committed = user has explicitly left the field after filling it.
-  // Separate from "filled" so questions don't reveal while still typing.
   const [q1Committed, setQ1Committed] = useStateNI(false);
   const [q2Committed, setQ2Committed] = useStateNI(false);
   const [q3Committed, setQ3Committed] = useStateNI(false);
+  const [q4Committed, setQ4Committed] = useStateNI(false);
 
   const q1Done = etapa.orcamentoMaterial !== '' && etapa.orcamentoMaoDeObra !== '';
-  const q2Done = etapa.descricao.trim().length > 0;
-  const q3Done = etapa.percentual !== '';
+  const q2Done = (etapa.financeiro_items || []).length > 0;
+  const q3Done = (etapa.fisico_items || []).length > 0;
+  const q4Done = etapa.percentual !== '';
 
   // When this card opens, pre-commit any questions already answered
   useEffectNI(() => {
@@ -69,12 +134,14 @@ const NiMonthBox = ({ etapa, nome, index, isOpen, isDone, isLocked, onChange, on
       if (q1Done) setQ1Committed(true);
       if (q2Done) setQ2Committed(true);
       if (q3Done) setQ3Committed(true);
+      if (q4Done) setQ4Committed(true);
     }
   }, [isOpen]); // eslint-disable-line
 
   const showQ2 = q1Committed && q1Done;
   const showQ3 = q2Committed && q2Done;
-  const showAdvance = q3Committed && q3Done;
+  const showQ4 = q3Committed && q3Done;
+  const showAdvance = q4Committed && q4Done;
 
   const borderColor = isOpen   ? 'var(--color-blue)'
                     : isDone   ? 'var(--color-gray-200)'
@@ -170,47 +237,46 @@ const NiMonthBox = ({ etapa, nome, index, isOpen, isDone, isLocked, onChange, on
             </div>
           </div>
 
-          {/* Q2 — Description (after Q1 committed) */}
+          {/* Q2 — FINANCEIRO tags (after Q1 committed) */}
           {showQ2 && (
             <div style={{ animation: 'niReveal 0.22s ease-out both' }}>
               <p style={{ fontSize: 13, color: 'var(--color-navy)', fontFamily: 'var(--font-body)', lineHeight: 1.55, marginBottom: 10 }}>
-                Resumidamente, que atividades serão feitas nesse mês?
+                Com quais itens a verba solicitada será gasta nesse mês?
               </p>
-              <NiFieldRow
-                shouldCommit={() => q2Done}
+              <NiTagInput
+                value={etapa.financeiro_items || []}
+                onChange={v => { onChange('financeiro_items', v); if (v.length > 0) setQ2Committed(true); }}
                 onCommit={() => setQ2Committed(true)}
-                style={{ borderBottom: '2px solid var(--color-navy-20)', transition: 'border-color 0.15s' }}
-                onFocusCapture={e => { e.currentTarget.style.borderBottomColor = 'var(--color-blue)'; }}
-                onBlurCapture={e => {
-                  if (!e.currentTarget.contains(e.relatedTarget))
-                    e.currentTarget.style.borderBottomColor = 'var(--color-navy-20)';
-                }}
-              >
-                <textarea
-                  value={etapa.descricao}
-                  onChange={e => onChange('descricao', e.target.value)}
-                  rows={3}
-                  placeholder="Descreva as atividades previstas…"
-                  style={{
-                    width: '100%', border: 'none', outline: 'none', resize: 'none',
-                    fontSize: 13, fontFamily: 'var(--font-body)', color: 'var(--color-navy)',
-                    background: 'transparent', padding: '4px 0', boxSizing: 'border-box', lineHeight: 1.55,
-                  }}
-                />
-              </NiFieldRow>
+                placeholder="Ex: Cimento, Mão de obra… (Enter)"
+              />
             </div>
           )}
 
-          {/* Q3 — % (after Q2 committed) */}
+          {/* Q3 — FISICO tags (after Q2 committed) */}
           {showQ3 && (
             <div style={{ animation: 'niReveal 0.22s ease-out both' }}>
               <p style={{ fontSize: 13, color: 'var(--color-navy)', fontFamily: 'var(--font-body)', lineHeight: 1.55, marginBottom: 10 }}>
-                Quanto a execução desse mês representa da execução total do item <strong>"{nome}"</strong>?
+                Quais atividades serão executadas nesse mês?
+              </p>
+              <NiTagInput
+                value={etapa.fisico_items || []}
+                onChange={v => { onChange('fisico_items', v); if (v.length > 0) setQ3Committed(true); }}
+                onCommit={() => setQ3Committed(true)}
+                placeholder="Ex: Concretagem, Pintura… (Enter)"
+              />
+            </div>
+          )}
+
+          {/* Q4 — % (after Q3 committed) */}
+          {showQ4 && (
+            <div style={{ animation: 'niReveal 0.22s ease-out both' }}>
+              <p style={{ fontSize: 13, color: 'var(--color-navy)', fontFamily: 'var(--font-body)', lineHeight: 1.55, marginBottom: 10 }}>
+                Quanto a execução das tarefas desse mês representa na execução total do item <strong>"{nome}"</strong>?
               </p>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <NiFieldRow
-                  shouldCommit={() => q3Done}
-                  onCommit={() => setQ3Committed(true)}
+                  shouldCommit={() => q4Done}
+                  onCommit={() => setQ4Committed(true)}
                   style={{ display: 'flex', alignItems: 'center', gap: 6, borderBottom: '2px solid var(--color-navy-20)', paddingBottom: 3, transition: 'border-color 0.15s' }}
                   onFocusCapture={e => { e.currentTarget.style.borderBottomColor = 'var(--color-blue)'; }}
                   onBlurCapture={e => {
@@ -301,7 +367,9 @@ const NovoItemDrawer = ({ isOpen, onClose, onSave, initialData }) => {
       setEtapas(next);
       // Open the first incomplete month
       const firstIncomplete = next.findIndex(e =>
-        e.orcamentoMaterial === '' || e.orcamentoMaoDeObra === '' || !e.descricao.trim() || e.percentual === ''
+        e.orcamentoMaterial === '' || e.orcamentoMaoDeObra === '' ||
+        !(e.financeiro_items || []).length || !(e.fisico_items || []).length ||
+        e.percentual === ''
       );
       setActiveIdx(firstIncomplete === -1 ? next.length - 1 : firstIncomplete);
     }
@@ -314,7 +382,8 @@ const NovoItemDrawer = ({ isOpen, onClose, onSave, initialData }) => {
   // A card is "done" when all its fields are filled
   const cardIsDone = (e) =>
     e.orcamentoMaterial !== '' && e.orcamentoMaoDeObra !== '' &&
-    e.descricao.trim() !== '' && e.percentual !== '';
+    (e.financeiro_items || []).length > 0 && (e.fisico_items || []).length > 0 &&
+    e.percentual !== '';
 
   // A card can be opened if the card before it is done (or it's the first)
   const cardIsAccessible = (idx) => idx === 0 || cardIsDone(etapas[idx - 1]);

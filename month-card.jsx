@@ -57,10 +57,13 @@ const NumInputMC = ({ value, onChange, placeholder, disabled, style: extraStyle,
 //   isReadOnly   — boolean
 //   vizMode      — 'financeiro' | 'fisico' (default 'financeiro')
 const MonthCard = ({ etapa, index, onChange, isReadOnly, vizMode = 'financeiro', startPct = 0 }) => {
+  const [showRecebidoModal, setShowRecebidoModal] = useStateMC(false);
+
   const solicitado = (Number(etapa.orcamentoMaterial) || 0) + (Number(etapa.orcamentoMaoDeObra) || 0);
-  const recebido   = Number(etapa.valorRecebido) || 0;
+  const recebido   = (Number(etapa.recebidoMaterial) || 0) + (Number(etapa.recebidoMaoDeObra) || 0)
+                   || (Number(etapa.valorRecebido) || 0);
   const gasto      = (Number(etapa.gastoMaterial) || 0) + (Number(etapa.gastoMaoDeObra) || 0);
-  const gastoOverrun = solicitado > 0 && gasto > solicitado;
+  const gastoOverrun = gasto > recebido;
 
   const today = new Date();
   const isCurrentMonth = (() => {
@@ -111,20 +114,23 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly, vizMode = 'financeiro',
   // Title color
   const titleColor = showWarning ? 'var(--color-warning)' : 'var(--color-navy)';
 
-  // Tags from descricao (placeholder until FISICO_ITEMS / FINANCEIRO_ITEMS arrays)
-  const descTags = etapa.descricao
-    ? etapa.descricao.split(',').map(s => s.trim()).filter(Boolean).map(label => ({
-        label,
-        fill: VM_NEUTRAL.bg2,
-        strokeColor: VM_NEUTRAL.bg3,
-      }))
-    : [];
+  const tagSource = vizMode === 'fisico'
+    ? (etapa.fisico_items || [])
+    : (etapa.financeiro_items || []);
+
+  const descTags = tagSource.map(label => ({
+    label,
+    fill: VM_NEUTRAL.bg2,
+    strokeColor: VM_NEUTRAL.bg3,
+  }));
 
   // ── FINANCEIRO StatusDiv: 3 ValueTag badges ────────────────────────────────
   const financeiroStatusDiv = financeiroDisabled ? (
     <div style={{ display: 'flex', gap: 6 }}>
       <ValueTag label="GASTO"      value={fmtBRLMCShort(gasto)}      bg="#8A98AC" color="white" />
-      <ValueTag label="RECEBIDO"   value={fmtBRLMCShort(recebido)}   bg="#8A98AC" color="white" />
+      <div onClick={() => setShowRecebidoModal(true)} style={{ cursor: 'pointer' }} title="Editar valores recebidos">
+        <ValueTag label="RECEBIDO" value={fmtBRLMCShort(recebido)} bg="#8A98AC" color="white" />
+      </div>
       <ValueTag label="SOLICITADO" value={fmtBRLMCShort(solicitado)} bg={VM_NEUTRAL.bg3} color={VM_NEUTRAL.text2} />
     </div>
   ) : (
@@ -135,12 +141,14 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly, vizMode = 'financeiro',
         bg={gastoOverrun ? VM_WARNING.active : VM_FINANCEIRO.complete}
         color={gastoOverrun ? VM_WARNING.text1 : 'white'}
       />
-      <ValueTag
-        label="RECEBIDO"
-        value={fmtBRLMCShort(recebido)}
-        bg={VM_FINANCEIRO.active}
-        color={VM_FINANCEIRO.text1}
-      />
+      <div onClick={() => setShowRecebidoModal(true)} style={{ cursor: 'pointer' }} title="Editar valores recebidos">
+        <ValueTag
+          label="RECEBIDO"
+          value={fmtBRLMCShort(recebido)}
+          bg={VM_FINANCEIRO.active}
+          color={VM_FINANCEIRO.text1}
+        />
+      </div>
       <ValueTag
         label="SOLICITADO"
         value={fmtBRLMCShort(solicitado)}
@@ -186,6 +194,69 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly, vizMode = 'financeiro',
       />
     </div>
   );
+
+  const recebidoModal = showRecebidoModal ? (
+    <>
+      <div
+        onClick={() => setShowRecebidoModal(false)}
+        style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(13,27,38,0.4)', backdropFilter: 'blur(2px)' }}
+      />
+      <div style={{
+        position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+        zIndex: 201, width: 360, background: 'var(--color-white)',
+        borderRadius: 'var(--radius-lg)', padding: '24px 24px 20px',
+        boxShadow: 'var(--shadow-xl)',
+      }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-navy)', marginBottom: 4 }}>
+          Valores recebidos
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--color-navy-50)', marginBottom: 18 }}>
+          {fmtMesMC(etapa.mes)}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+          {[
+            ['recebidoMaterial',  'Material'],
+            ['recebidoMaoDeObra', 'Mão de Obra'],
+          ].map(([field, label]) => (
+            <div key={field}>
+              <div style={{
+                fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em',
+                color: 'var(--color-navy-50)', fontFamily: 'var(--font-display)', marginBottom: 6, textAlign: 'center',
+              }}>
+                {label}
+              </div>
+              <div style={{
+                border: `1.5px solid ${VM_FINANCEIRO.active}`, borderRadius: 'var(--radius-md)',
+                padding: '8px 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3,
+              }}>
+                <span style={{ fontSize: 12, color: VM_FINANCEIRO.complete, fontFamily: 'var(--font-mono)', flexShrink: 0 }}>R$</span>
+                <NumInputMC
+                  value={etapa[field]}
+                  onChange={v => onChange(field, v)}
+                  placeholder="0"
+                  style={{
+                    border: 'none', outline: 'none', width: '100%', fontSize: 16,
+                    fontFamily: 'var(--font-mono)', fontWeight: 700,
+                    color: VM_FINANCEIRO.complete, background: 'transparent', padding: 0, textAlign: 'center',
+                  }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{
+          fontSize: 10, color: 'var(--color-navy-50)', lineHeight: 1.5,
+          background: 'var(--color-gray-50)', borderRadius: 'var(--radius-sm)',
+          padding: '8px 10px', marginBottom: 18, fontStyle: 'italic',
+        }}>
+          Solução temporária para testes — será substituído quando existir usuários diferentes para a construtora, investidores e Carnaúba.
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button onClick={() => setShowRecebidoModal(false)} className="btn btn-primary">Fechar</button>
+        </div>
+      </div>
+    </>
+  ) : null;
 
   return (
     <div style={{
@@ -241,10 +312,10 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly, vizMode = 'financeiro',
               {/* Answer: 2 outlined input boxes */}
               <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 {[
-                  ['gastoMaterial',  'orcamentoMaterial',  'Material'],
-                  ['gastoMaoDeObra', 'orcamentoMaoDeObra', 'Mão de Obra'],
-                ].map(([field, orcField, label]) => {
-                  const fieldOverrun = (Number(etapa[orcField]) > 0) && (Number(etapa[field]) > Number(etapa[orcField]));
+                  ['gastoMaterial',  'recebidoMaterial',  'Material'],
+                  ['gastoMaoDeObra', 'recebidoMaoDeObra', 'Mão de Obra'],
+                ].map(([field, recField, label]) => {
+                  const fieldOverrun = Number(etapa[field]) > Number(etapa[recField]);
                   const fieldColor   = fieldOverrun ? 'var(--color-warning)' : VM_FINANCEIRO.complete;
                   const borderColor  = fieldOverrun ? 'rgba(192,138,42,0.5)' : VM_FINANCEIRO.active;
                   return (
@@ -283,7 +354,7 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly, vizMode = 'financeiro',
                         fontFamily: 'var(--font-mono)', marginTop: 5, textAlign: 'center',
                         whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                       }}>
-                        {fmtBRLMC(etapa[orcField])} solicitados
+                        {fmtBRLMC(etapa[recField])} recebidos
                       </div>
                     </div>
                   );
@@ -336,6 +407,8 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly, vizMode = 'financeiro',
           Etapa atrasada.
         </div>
       )}
+
+      {recebidoModal}
     </div>
   );
 };

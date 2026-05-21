@@ -30,7 +30,8 @@ const newEtapaObj = () => ({
   id: `e${Date.now()}${Math.random().toString(36).slice(2, 5)}`,
   mes: '', percentual: '', orcamentoMaterial: '', orcamentoMaoDeObra: '',
   descricao: '', feito: false, gastoMaterial: '', gastoMaoDeObra: '',
-  valorRecebido: '', percentualRealizado: 0,
+  valorRecebido: '', recebidoMaterial: '', recebidoMaoDeObra: '',
+  percentualRealizado: 0,
 });
 
 // ── NumInput ──────────────────────────────────────────────────────
@@ -252,9 +253,14 @@ const ItemDrawer = ({ item, isOpen, onClose, onSave, onDelete, vizMode = 'financ
   const endMes   = etapasWithMes[etapasWithMes.length - 1]?.mes;
 
   const totalSolicitado = editEtapas.reduce((s, e) => s + (Number(e.orcamentoMaterial) || 0) + (Number(e.orcamentoMaoDeObra) || 0), 0);
-  const totalRecebido   = editEtapas.reduce((s, e) => s + (Number(e.valorRecebido) || 0), 0);
+  const totalRecebido   = editEtapas.reduce((s, e) =>
+    s + ((Number(e.recebidoMaterial)||0) + (Number(e.recebidoMaoDeObra)||0) || (Number(e.valorRecebido)||0)), 0);
   const totalGasto      = editEtapas.reduce((s, e) => s + (Number(e.gastoMaterial) || 0) + (Number(e.gastoMaoDeObra) || 0), 0);
-  const totalGastoOverrun = totalSolicitado > 0 && totalGasto > totalSolicitado;
+  const totalGastoOverrun = editEtapas.some(e => {
+    const rec = (Number(e.recebidoMaterial)||0) + (Number(e.recebidoMaoDeObra)||0) || (Number(e.valorRecebido)||0);
+    const gas = (Number(e.gastoMaterial)||0) + (Number(e.gastoMaoDeObra)||0);
+    return gas > rec;
+  });
 
   const editInitialData = {
     nome: item.versions[latestIdx].nome,

@@ -5,13 +5,16 @@ Aplicação web de gerenciamento de cronograma e orçamento de projetos de inves
 ## Funcionalidades
 
 - **Modos de visualização (Financeiro / Físico)** — alternados por botões posicionados ao lado do título "Cronograma" no cabeçalho; todos os componentes atualizam simultaneamente
-  - **Financeiro** (paleta verde): barras de 3 segmentos mostrando Solicitado → Recebido → Gasto com rótulos em R$ abreviados; se Gasto > Recebido, a barra muda para paleta de alerta (âmbar)
+  - **Financeiro** (paleta verde): barras de 3 segmentos mostrando Solicitado → Recebido → Gasto com rótulos em R$ abreviados; alerta (âmbar) se qualquer etapa tem `gasto > recebido` (incluindo recebido = 0 com gasto > 0); a comparação é por etapa individual, não pelo agregado
   - **Físico** (paleta azul): barras de 3 segmentos mostrando Trilho (100%) → Ativo (todos os meses iniciados) → Realizado (sobreposição escura, `Σ percentual × percentualRealizado / 100`); se algum mês encerrado tem `percentualRealizado < 100`, a barra muda para paleta de alerta (âmbar)
 - **DrawerHeader — componente paramétrico compartilhado** (`drawer-header.jsx`) — cabeçalho de 2 linhas usado por `ItemDrawer` e `MonthCard`; linha 1: círculo opcional + títulos + `statusDiv` alinhado à direita; linha 2: tags em pílulas; sub-componentes `ValueTag` (badge com rótulo + valor) e `SegBar` (barra de progresso com segmentos sobrepostos e rótulos flutuantes)
 - **ItemDrawer — modos FÍSICO / FINANCEIRO** — cabeçalho mostra 3 `ValueTag` (Gasto / Recebido / Solicitado) no modo Financeiro, ou barra de progresso agregada com segmentos Ativo + Realizado no modo Físico; corpo exibe campos de gasto (Financeiro) ou campo `percentualRealizado %` (Físico); rodapé reorganizado: Deletar + Editar à esquerda, Cancelar + Salvar à direita
 - **MonthCard — modos FÍSICO / FINANCEIRO** — cabeçalho usa `DrawerHeader` com `statusDiv` por modo; no modo Físico: barra cumulativa por mês (cada barra começa onde a anterior terminou); círculo mostra número ou ✓ conforme conclusão; cores de alerta (âmbar) quando mês encerrado e `percentualRealizado < 100`
 - **Campo `percentualRealizado`** — adicionado ao schema de etapa (0–100); no modo Físico, substitui `feito` como indicador de conclusão: `percentualRealizado >= 100` = etapa concluída; `feito` é ignorado em todos os cálculos Físicos
-- **Lógica de alerta unificada** — função `etapaShowsWarning(e)` exportada em `cronograma-itens.jsx` é a fonte única de verdade: `mês encerrado && percentualRealizado < 100`; usada por MonthCard, ItemDrawer, ItemCronograma, GrupoItensCronograma, GanttItemBar e GanttGroupBar
+- **Lógica de alerta unificada** — dois gatilhos independentes por modo:
+  - *Físico:* `etapaShowsWarning(e)` — `mês encerrado && percentualRealizado < 100`
+  - *Financeiro:* `hasEtapaFinancialOverrun(etapas)` — qualquer etapa com `gasto > recebido` (recebido = 0 com gasto > 0 também dispara); comparação por etapa, não pelo total acumulado; usada por `ItemCronograma`, `GrupoHeader`, `GrupoItensCronograma`, `GanttItemBar` e `GanttGroupBar`; `forceWarn` em `buildFinancialSegments` e `buildSegments` propaga o alerta para os segmentos da barra mesmo quando o total acumulado não ultrapassaria o recebido
+- **Badge RECEBIDO clicável no MonthCard** — no modo Financeiro, clicar no badge RECEBIDO abre um modal para inserir `recebidoMaterial` e `recebidoMaoDeObra` separadamente; o total exibido no badge é derivado da soma desses dois campos (com fallback para o campo legado `valorRecebido`); os subtítulos abaixo dos campos de gasto exibem "R$ … recebidos" com os valores correspondentes
 - **ProgressCard — componente paramétrico unificado** — substitui todos os componentes de barra anteriores; recebe `segments[]` com cor e rótulo por camada, suporta modo expansível com corpo e rodapé, título editável por duplo-clique e drag-and-drop integrado
 - **Cronograma Gantt interativo** — visualização em meses com barras de progresso por grupo e por item, usando `ProgressCard` com segmentos por VM; alturas reduzidas e títulos posicionados fora dos cards para melhor legibilidade
 - **Título do item no Gantt** — cada `GanttItemCard` exibe o nome do item à esquerda das barras mensais (fora do card); as barras permanecem sempre alinhadas à grade de meses independentemente do título; `GanttGroupCard` exibe o nome do grupo na mesma posição
@@ -142,7 +145,9 @@ Grupo
                 ├── feito                — etapa concluída (boolean, usado apenas no modo Financeiro)
                 ├── gastoMaterial        — realizado: material (BRL)
                 ├── gastoMaoDeObra       — realizado: mão de obra (BRL)
-                ├── valorRecebido        — valor recebido nesta etapa (BRL)
+                ├── valorRecebido        — valor recebido (BRL) — campo legado; substituído por recebidoMaterial + recebidoMaoDeObra; mantido para compatibilidade com dados existentes
+                ├── recebidoMaterial     — recebido: material (BRL) — inserido via modal no badge RECEBIDO
+                ├── recebidoMaoDeObra    — recebido: mão de obra (BRL) — inserido via modal no badge RECEBIDO
                 └── percentualRealizado  — % das atividades realizadas no mês (0–100, modo Físico)
 ```
 

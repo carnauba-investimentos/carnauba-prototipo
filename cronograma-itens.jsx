@@ -103,10 +103,13 @@ const getGroupSpent = (grupo) =>
     return s + getTotalSpent(latest);
   }, 0);
 
+const etapaRecebido = (e) =>
+  (Number(e.recebidoMaterial)||0) + (Number(e.recebidoMaoDeObra)||0) || (Number(e.valorRecebido)||0);
+
 const getGroupRecebido = (grupo) =>
   grupo.items.reduce((s, item) => {
     const latest = item.versions[item.versions.length - 1];
-    return s + latest.etapas.reduce((sum, e) => sum + (Number(e.valorRecebido) || 0), 0);
+    return s + latest.etapas.reduce((sum, e) => sum + etapaRecebido(e), 0);
   }, 0);
 
 const hasOverdueEtapa = (version) => {
@@ -121,9 +124,22 @@ const getGroupHasOverdue = (grupo) =>
 // Each segment: { pct, bg, label, labelColor, labelSize? }
 // Segments are rendered back-to-front (index 0 = full-width track, index 2 = frontmost fill).
 
-const buildFinancialSegments = (solicitado, recebido, gasto) => {
+const hasEtapaFinancialOverrun = (etapas) =>
+  (etapas || []).some(e => {
+    const rec = etapaRecebido(e);
+    const gas = (Number(e.gastoMaterial)||0) + (Number(e.gastoMaoDeObra)||0);
+    return gas > rec;
+  });
+
+const hasGroupFinancialOverrun = (grupo) =>
+  grupo.items.some(item => {
+    const latest = item.versions[item.versions.length - 1];
+    return hasEtapaFinancialOverrun(latest.etapas);
+  });
+
+const buildFinancialSegments = (solicitado, recebido, gasto, forceWarn = false) => {
   const s = solicitado || 0, r = recebido || 0, g = gasto || 0;
-  const warn    = g > r;
+  const warn    = forceWarn || g > r;
   const palette = warn ? VM_WARNING : VM_FINANCEIRO;
   const recPct  = s > 0 ? Math.min(100, r / s * 100) : 0;
   const gasPct  = s > 0 ? Math.min(100, g / s * 100) : 0;
@@ -146,10 +162,10 @@ const buildFisicoSegments = (realizadoPct, ativoPct, overduePct = 0, showTrackLa
   ];
 };
 
-const buildSegments = (vizMode, { solicitado, recebido, gasto, realizadoPct, ativoPct, overduePct }) =>
+const buildSegments = (vizMode, { solicitado, recebido, gasto, realizadoPct, ativoPct, overduePct, forceWarn = false }) =>
   vizMode === 'fisico'
     ? buildFisicoSegments(realizadoPct || 0, ativoPct || 0, overduePct || 0, false)
-    : buildFinancialSegments(solicitado || 0, recebido || 0, gasto || 0);
+    : buildFinancialSegments(solicitado || 0, recebido || 0, gasto || 0, forceWarn);
 
 // ── ProgressCard — unified parametric card/bar component ──────────────
 //
@@ -337,12 +353,13 @@ const ItemCronograma = ({ item, dragHandleProps, onClick, vizMode = 'financeiro'
   const latest   = item.versions[item.versions.length - 1];
   const solicitado = getTotalBudget(latest);
   const gasto      = getTotalSpent(latest);
-  const recebido   = latest.etapas.reduce((s, e) => s + (Number(e.valorRecebido) || 0), 0);
+  const recebido   = latest.etapas.reduce((s, e) => s + etapaRecebido(e), 0);
   const realizado  = getRealizadoPct(latest);
   const ativo      = getAtivoPct(latest);
   const overdue    = getOverduePct(latest);
+  const hasOverrun = hasEtapaFinancialOverrun(latest.etapas);
 
-  const segments = buildSegments(vizMode, { solicitado, recebido, gasto, realizadoPct: realizado, ativoPct: ativo, overduePct: overdue });
+  const segments = buildSegments(vizMode, { solicitado, recebido, gasto, realizadoPct: realizado, ativoPct: ativo, overduePct: overdue, forceWarn: hasOverrun });
 
   return (
     <div
@@ -355,7 +372,7 @@ const ItemCronograma = ({ item, dragHandleProps, onClick, vizMode = 'financeiro'
         transition: 'transform 0.15s ease, box-shadow 0.01s ease',
       }}
     >
-      <Tooltip solicitado={solicitado} recebido={recebido} gasto={gasto} warn={gasto > recebido} disabled={vizMode !== 'financeiro' || isDragging}>
+      <Tooltip solicitado={solicitado} recebido={recebido} gasto={gasto} warn={hasOverrun || gasto > recebido} disabled={vizMode !== 'financeiro' || isDragging}>
         <ProgressCard
           minHeight={50}
           borderRadius={10}
@@ -381,12 +398,13 @@ const GrupoHeader = ({ grupo, dragHandleProps, onToggle, onRenameGroup, vizMode 
   const realizado  = getGroupRealizadoPct(grupo);
   const ativo      = getGroupAtivoPct(grupo);
   const overdue    = getGroupOverduePct(grupo);
+  const hasOverrun = hasGroupFinancialOverrun(grupo);
 
-  const segments = buildSegments(vizMode, { solicitado, recebido, gasto, realizadoPct: realizado, ativoPct: ativo, overduePct: overdue });
+  const segments = buildSegments(vizMode, { solicitado, recebido, gasto, realizadoPct: realizado, ativoPct: ativo, overduePct: overdue, forceWarn: hasOverrun });
 
   return (
     <div style={{ height: '100%' }} onClick={onToggle}>
-      <Tooltip solicitado={solicitado} recebido={recebido} gasto={gasto} warn={gasto > recebido} disabled={vizMode !== 'financeiro' || isDragging}>
+      <Tooltip solicitado={solicitado} recebido={recebido} gasto={gasto} warn={hasOverrun || gasto > recebido} disabled={vizMode !== 'financeiro' || isDragging}>
         <ProgressCard
           minHeight={56}
           borderRadius={10}
@@ -575,7 +593,7 @@ Object.assign(window, {
   GrupoHeader, GroupFooter, GrupoItensCronograma, ItemCronograma,
   DragDropContext, Droppable, Draggable,
   buildSegments, buildFinancialSegments, buildFisicoSegments,
-  etapaIsDone, etapaShowsWarning,
+  etapaIsDone, etapaShowsWarning, etapaRecebido, hasEtapaFinancialOverrun, hasGroupFinancialOverrun,
   getRealizadoPct, getAtivoPct, getOverduePct, getGroupRealizadoPct, getGroupAtivoPct, getGroupOverduePct,
   VM_NEUTRAL, VM_FINANCEIRO, VM_FISICO, VM_WARNING,
 });
