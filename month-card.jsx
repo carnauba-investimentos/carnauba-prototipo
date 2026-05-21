@@ -48,6 +48,46 @@ const NumInputMC = ({ value, onChange, placeholder, disabled, style: extraStyle,
   );
 };
 
+// ── SolicitadoTooltip ─────────────────────────────────────────────────────────
+const SolicitadoTooltip = ({ mat, mo, anchorRef }) => {
+  const [pos, setPos] = useStateMC(null);
+  React.useEffect(() => {
+    if (anchorRef && anchorRef.current) {
+      const r = anchorRef.current.getBoundingClientRect();
+      setPos({ top: r.top - 8, left: r.left + r.width / 2 });
+    }
+  }, []);
+  if (!pos) return null;
+  return ReactDOM.createPortal(
+    <div style={{
+      position: 'fixed', top: pos.top, left: pos.left,
+      transform: 'translate(-50%, -100%)',
+      background: '#1B3C5F', color: 'white', borderRadius: 6,
+      padding: '6px 10px', fontSize: 11, whiteSpace: 'nowrap',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.25)', zIndex: 9999,
+      pointerEvents: 'none',
+    }}>
+      <div>Material: {fmtBRLMC(mat)}</div>
+      <div>Mão de obra: {fmtBRLMC(mo)}</div>
+    </div>,
+    document.body
+  );
+};
+
+const useSolicitadoTip = () => {
+  const [show, setShow] = useStateMC(false);
+  const timerRef = React.useRef(null);
+  const enter = () => {
+    timerRef.current = setTimeout(() => setShow(true), 500);
+  };
+  const leave = () => {
+    clearTimeout(timerRef.current);
+    setShow(false);
+  };
+  React.useEffect(() => () => clearTimeout(timerRef.current), []);
+  return { show, enter, leave };
+};
+
 // ── MonthCard ─────────────────────────────────────────────────────────────────
 //
 // Props:
@@ -58,6 +98,10 @@ const NumInputMC = ({ value, onChange, placeholder, disabled, style: extraStyle,
 //   vizMode      — 'financeiro' | 'fisico' (default 'financeiro')
 const MonthCard = ({ etapa, index, onChange, isReadOnly, vizMode = 'financeiro', startPct = 0 }) => {
   const [showRecebidoModal, setShowRecebidoModal] = useStateMC(false);
+  const [draftMat, setDraftMat] = useStateMC(0);
+  const [draftMO, setDraftMO]   = useStateMC(0);
+  const tip = useSolicitadoTip();
+  const solicitadoRef = React.useRef(null);
 
   const solicitado = (Number(etapa.orcamentoMaterial) || 0) + (Number(etapa.orcamentoMaoDeObra) || 0);
   const recebido   = (Number(etapa.recebidoMaterial) || 0) + (Number(etapa.recebidoMaoDeObra) || 0)
@@ -124,14 +168,23 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly, vizMode = 'financeiro',
     strokeColor: VM_NEUTRAL.bg3,
   }));
 
+  const openRecebidoModal = () => {
+    setDraftMat(Number(etapa.recebidoMaterial) || Number(etapa.orcamentoMaterial) || 0);
+    setDraftMO(Number(etapa.recebidoMaoDeObra) || Number(etapa.orcamentoMaoDeObra) || 0);
+    setShowRecebidoModal(true);
+  };
+
   // ── FINANCEIRO StatusDiv: 3 ValueTag badges ────────────────────────────────
   const financeiroStatusDiv = financeiroDisabled ? (
     <div style={{ display: 'flex', gap: 6 }}>
       <ValueTag label="GASTO"      value={fmtBRLMCShort(gasto)}      bg="#8A98AC" color="white" />
-      <div onClick={() => setShowRecebidoModal(true)} style={{ cursor: 'pointer' }} title="Editar valores recebidos">
+      <div onClick={openRecebidoModal} style={{ cursor: 'pointer' }} title="Editar valores recebidos">
         <ValueTag label="RECEBIDO" value={fmtBRLMCShort(recebido)} bg="#8A98AC" color="white" />
       </div>
-      <ValueTag label="SOLICITADO" value={fmtBRLMCShort(solicitado)} bg={VM_NEUTRAL.bg3} color={VM_NEUTRAL.text2} />
+      <div ref={solicitadoRef} style={{ position: 'relative' }} onMouseEnter={tip.enter} onMouseLeave={tip.leave}>
+        <ValueTag label="SOLICITADO" value={fmtBRLMCShort(solicitado)} bg={VM_NEUTRAL.bg3} color={VM_NEUTRAL.text2} />
+        {tip.show && <SolicitadoTooltip mat={etapa.orcamentoMaterial} mo={etapa.orcamentoMaoDeObra} anchorRef={solicitadoRef} />}
+      </div>
     </div>
   ) : (
     <div style={{ display: 'flex', gap: 6 }}>
@@ -141,7 +194,7 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly, vizMode = 'financeiro',
         bg={gastoOverrun ? VM_WARNING.active : VM_FINANCEIRO.complete}
         color={gastoOverrun ? VM_WARNING.text1 : 'white'}
       />
-      <div onClick={() => setShowRecebidoModal(true)} style={{ cursor: 'pointer' }} title="Editar valores recebidos">
+      <div onClick={openRecebidoModal} style={{ cursor: 'pointer' }} title="Editar valores recebidos">
         <ValueTag
           label="RECEBIDO"
           value={fmtBRLMCShort(recebido)}
@@ -149,12 +202,15 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly, vizMode = 'financeiro',
           color={VM_FINANCEIRO.text1}
         />
       </div>
-      <ValueTag
-        label="SOLICITADO"
-        value={fmtBRLMCShort(solicitado)}
-        bg={VM_NEUTRAL.bg3}
-        color={VM_NEUTRAL.text2}
-      />
+      <div ref={solicitadoRef} style={{ position: 'relative' }} onMouseEnter={tip.enter} onMouseLeave={tip.leave}>
+        <ValueTag
+          label="SOLICITADO"
+          value={fmtBRLMCShort(solicitado)}
+          bg={VM_NEUTRAL.bg3}
+          color={VM_NEUTRAL.text2}
+        />
+        {tip.show && <SolicitadoTooltip mat={etapa.orcamentoMaterial} mo={etapa.orcamentoMaoDeObra} anchorRef={solicitadoRef} />}
+      </div>
     </div>
   );
 
@@ -190,7 +246,7 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly, vizMode = 'financeiro',
         segments={fisicoSegments}
         height={24}
         borderRadius={6}
-        label="% DO MÊS EM RELAÇÃO A TODAS ATIVIDADES DESSE ITEM"
+        label="PROGRESSO NO MÊS E RELAÇÃO COM EXECUÇÃO TOTAL DO ITEM"
       />
     </div>
   );
@@ -215,10 +271,10 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly, vizMode = 'financeiro',
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
           {[
-            ['recebidoMaterial',  'Material'],
-            ['recebidoMaoDeObra', 'Mão de Obra'],
-          ].map(([field, label]) => (
-            <div key={field}>
+            ['Material',    draftMat, setDraftMat],
+            ['Mão de Obra', draftMO,  setDraftMO],
+          ].map(([label, val, setVal]) => (
+            <div key={label}>
               <div style={{
                 fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em',
                 color: 'var(--color-navy-50)', fontFamily: 'var(--font-display)', marginBottom: 6, textAlign: 'center',
@@ -231,8 +287,8 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly, vizMode = 'financeiro',
               }}>
                 <span style={{ fontSize: 12, color: VM_FINANCEIRO.complete, fontFamily: 'var(--font-mono)', flexShrink: 0 }}>R$</span>
                 <NumInputMC
-                  value={etapa[field]}
-                  onChange={v => onChange(field, v)}
+                  value={val}
+                  onChange={setVal}
                   placeholder="0"
                   style={{
                     border: 'none', outline: 'none', width: '100%', fontSize: 16,
@@ -251,8 +307,13 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly, vizMode = 'financeiro',
         }}>
           Solução temporária para testes — será substituído quando existir usuários diferentes para a construtora, investidores e Carnaúba.
         </div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-          <button onClick={() => setShowRecebidoModal(false)} className="btn btn-primary">Fechar</button>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <button onClick={() => setShowRecebidoModal(false)} className="btn btn-secondary">Cancelar</button>
+          <button onClick={() => {
+            onChange('recebidoMaterial',  draftMat);
+            onChange('recebidoMaoDeObra', draftMO);
+            setShowRecebidoModal(false);
+          }} className="btn btn-primary">Enviar</button>
         </div>
       </div>
     </>

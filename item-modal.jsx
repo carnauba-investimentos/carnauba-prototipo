@@ -316,7 +316,7 @@ const ItemDrawer = ({ item, isOpen, onClose, onSave, onDelete, vizMode = 'financ
         ]}
         height={28}
         borderRadius={8}
-        label="% DO ITEM EM RELAÇÃO AO CRONOGRAMA"
+        label="PROGRESSO DO ITEM"
       />
     </div>
   );

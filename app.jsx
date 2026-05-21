@@ -480,11 +480,12 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
 
     return (
       <React.Fragment>
-        {/* Title — outside the card, right-aligned, vertically centered */}
+        {/* Title — left of the bar card, right-aligned; sticky left col visually clips overflow */}
         <div style={{
           position: 'absolute',
-          left: cardLeft - GANTT_ITEM_TITLE_W, top: cardTop,
-          width: GANTT_ITEM_TITLE_W - 8, height: barCardH,
+          left: -(groupOriginX - CARD_PAD), top: cardTop,
+          width: groupOriginX - CARD_PAD + cardLeft - 8,
+          height: barCardH,
           display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
           paddingRight: 6,
           fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-display)',
@@ -539,10 +540,11 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
 
     return (
       <React.Fragment>
-        {/* Group title — to the left of the card, right-aligned */}
+        {/* Group title — spans from left column right edge to just before the group card */}
         <div style={{
           position: 'absolute', top: 0,
-          left: cardLeft - GANTT_ITEM_TITLE_W + CARD_PAD, width: GANTT_ITEM_TITLE_W - 8,
+          left: LEFT_COL_W,
+          width: Math.max(0, groupOriginX - 8),
           height: headerH,
           display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
           paddingRight: 6,
@@ -1117,7 +1119,28 @@ const App = () => {
               }}>{vm.label}</button>
             ))}
           </div>
-          <div style={{ flex: 1 }} />
+
+          {/* Color legend — centered */}
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              {(vizMode === 'financeiro' ? [
+                { color: VM_NEUTRAL.bg3,          label: 'Não recebido' },
+                { color: VM_FINANCEIRO.active,    label: 'Recebido' },
+                { color: VM_FINANCEIRO.complete,  label: 'Gasto' },
+                { color: VM_WARNING.active,       label: 'Ultrapassado' },
+              ] : [
+                { color: VM_NEUTRAL.bg3,          label: 'Planejamento futuro' },
+                { color: VM_FISICO.active,        label: 'Planejado para o mês' },
+                { color: VM_FISICO.complete,      label: 'Progresso realizado' },
+                { color: VM_WARNING.active,       label: 'Atividades em atraso' },
+              ]).map(({ color, label }) => (
+                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <div style={{ width: 10, height: 10, borderRadius: 3, background: color, flexShrink: 0 }} />
+                  <span style={{ fontSize: 10, color: VM_NEUTRAL.text2, whiteSpace: 'nowrap', fontFamily: 'var(--font-display)' }}>{label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Gantt */}
@@ -1183,36 +1206,6 @@ const App = () => {
 
           {/* Right actions */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-            <button
-              onClick={handleExportTemplates}
-              title="Exportar templates"
-              disabled={templates.length === 0}
-              style={{
-                background: 'none', border: '1px solid var(--color-gray-200)',
-                borderRadius: 6, cursor: templates.length === 0 ? 'not-allowed' : 'pointer',
-                color: templates.length === 0 ? 'var(--color-gray-300)' : 'var(--color-gray-500)',
-                padding: '5px 7px', display: 'flex', alignItems: 'center',
-                transition: 'border-color 0.12s, color 0.12s',
-              }}
-              onMouseEnter={e => { if (templates.length > 0) { e.currentTarget.style.borderColor = 'var(--color-blue)'; e.currentTarget.style.color = 'var(--color-blue)'; } }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-gray-200)'; e.currentTarget.style.color = templates.length === 0 ? 'var(--color-gray-300)' : 'var(--color-gray-500)'; }}
-            ><IconDownload /></button>
-
-            <input ref={importFileRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleImportTemplates} />
-            <button
-              onClick={() => importFileRef.current?.click()}
-              title="Importar templates"
-              style={{
-                background: 'none', border: '1px solid var(--color-gray-200)',
-                borderRadius: 6, cursor: 'pointer',
-                color: 'var(--color-gray-500)',
-                padding: '5px 7px', display: 'flex', alignItems: 'center',
-                transition: 'border-color 0.12s, color 0.12s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-blue)'; e.currentTarget.style.color = 'var(--color-blue)'; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-gray-200)'; e.currentTarget.style.color = 'var(--color-gray-500)'; }}
-            ><IconUpload /></button>
-
             <button
               onClick={handleOpenSaveTemplateDialog}
               style={{

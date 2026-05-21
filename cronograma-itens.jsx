@@ -31,6 +31,7 @@ const VM_FINANCEIRO = { complete: '#389579', active: '#92B7AD', text1: '#255A4A'
 const VM_FISICO     = { complete: '#3289C0', active: '#8BBBD6', text1: '#064267', text2: '#3C7294' };
 const VM_WARNING    = { complete: '#C08A2A', active: '#C8A05A', text1: '#704D0F', text2: '#704D0F' };
 
+
 // ── Físico calculation helpers ────────────────────────────────────────
 // These call mesToStartISO from app.jsx — safe because components are rendered after app.jsx runs.
 
