@@ -225,18 +225,22 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly, vizMode = 'financeiro',
     seg2Bg = VM_FISICO.active;    seg2LabelColor = VM_FISICO.text2;
     seg3Bg = VM_FISICO.complete;  seg3LabelColor = VM_FISICO.text1;
   } else if (showWarning) {
-    // past month, not 100% realized
-    seg2Bg = VM_WARNING.active;   seg2LabelColor = VM_WARNING.text1;
-    seg3Bg = VM_WARNING.complete; seg3LabelColor = VM_WARNING.text1;
+    // past month, not 100% realized — active segment warns, realized stays blue
+    seg2Bg = VM_WARNING.active;    seg2LabelColor = VM_WARNING.text1;
+    seg3Bg = VM_FISICO.complete;   seg3LabelColor = VM_FISICO.text1;
   } else {
     // future months: neutral planned, blue realized
     seg2Bg = VM_NEUTRAL.text1;   seg2LabelColor = VM_NEUTRAL.text2;
     seg3Bg = VM_FISICO.complete; seg3LabelColor = VM_FISICO.text1;
   }
 
+  const seg2Label = showWarning
+    ? (seg2Pct > 0 ? `${Math.max(0, Math.round(seg2Pct - seg3Pct))}%` : null)
+    : (seg2Pct > 0 ? `${Math.round(seg2Pct)}%` : null);
+
   const fisicoSegments = [
-    { pct: 100,     left: 0,        bg: VM_NEUTRAL.bg3, label: null,                                           labelColor: VM_NEUTRAL.text1 },
-    { pct: seg2Pct, left: startPct, bg: seg2Bg,         label: seg2Pct > 0 ? `${Math.round(seg2Pct)}%` : null, labelColor: seg2LabelColor },
+    { pct: 100,     left: 0,        bg: VM_NEUTRAL.bg3, label: null,       labelColor: VM_NEUTRAL.text1 },
+    { pct: seg2Pct, left: startPct, bg: seg2Bg,         label: seg2Label,  labelColor: seg2LabelColor },
     { pct: seg3Pct, left: startPct, bg: seg3Bg,         label: seg3Pct > 0 ? `${Math.round(seg3Pct)}%` : null, labelColor: seg3LabelColor },
   ];
 
@@ -253,7 +257,7 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly, vizMode = 'financeiro',
 
   const recebidoModal = showRecebidoModal ? (
     <>
-      <div
+      <div 
         onClick={() => setShowRecebidoModal(false)}
         style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(13,27,38,0.4)', backdropFilter: 'blur(2px)' }}
       />

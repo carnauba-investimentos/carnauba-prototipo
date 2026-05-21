@@ -152,14 +152,16 @@ const buildFinancialSegments = (solicitado, recebido, gasto, forceWarn = false) 
 };
 
 const buildFisicoSegments = (realizadoPct, ativoPct, overduePct = 0, showTrackLabel = true) => {
-  const rp      = Math.max(0, realizadoPct || 0);  // weighted realized — subset of ap
-  const ap      = Math.min(100, Math.max(0, ativoPct || 0));  // all started months (includes done)
+  const rp      = Math.max(0, realizadoPct || 0);
+  const ap      = Math.min(100, Math.max(0, ativoPct || 0));
   const warn    = (overduePct || 0) > 0;
   const palette = warn ? VM_WARNING : VM_FISICO;
+  // When overdue: active label shows unrealized portion (ap - rp), not the full planned %
+  const apLabel = warn ? Math.max(0, Math.round(ap - rp)) : Math.round(ap);
   return [
-    { pct: 100, bg: VM_NEUTRAL.bg3,   label: showTrackLabel ? '100%' : null,           labelColor: VM_NEUTRAL.text1 },
-    { pct: ap,  bg: palette.active,   label: ap > 0 ? `${Math.round(ap)}%` : null,     labelColor: palette.text2 },
-    { pct: rp,  bg: palette.complete, label: rp > 0 ? `${Math.round(rp)}%` : null,     labelColor: palette.text1 },
+    { pct: 100, bg: VM_NEUTRAL.bg3,     label: showTrackLabel ? '100%' : null,                  labelColor: VM_NEUTRAL.text1 },
+    { pct: ap,  bg: palette.active,     label: ap > 0 ? `${apLabel}%` : null,                   labelColor: palette.text2 },
+    { pct: rp,  bg: VM_FISICO.complete, label: rp > 0 ? `${Math.round(rp)}%` : null,            labelColor: VM_FISICO.text1 },
   ];
 };
 
@@ -362,6 +364,8 @@ const ItemCronograma = ({ item, dragHandleProps, onClick, vizMode = 'financeiro'
 
   const segments = buildSegments(vizMode, { solicitado, recebido, gasto, realizadoPct: realizado, ativoPct: ativo, overduePct: overdue, forceWarn: hasOverrun });
 
+  const atrasoPct = Math.max(0, overdue - realizado);
+
   return (
     <div
       onMouseEnter={() => setHovered(true)}
@@ -374,17 +378,19 @@ const ItemCronograma = ({ item, dragHandleProps, onClick, vizMode = 'financeiro'
       }}
     >
       <Tooltip solicitado={solicitado} recebido={recebido} gasto={gasto} warn={hasOverrun || gasto > recebido} disabled={vizMode !== 'financeiro' || isDragging}>
-        <ProgressCard
-          minHeight={50}
-          borderRadius={10}
-          title={latest?.nome || 'Item sem nome'}
-          titleSize={14}
-          titleColor={VM_NEUTRAL.text3}
-          segments={segments}
-          onClick={() => onClick(item)}
-          dragHandleProps={dragHandleProps}
-          dragging={isDragging}
-        />
+        <FisicoTooltip futuro={Math.max(0, 100 - ativo)} planejado={ativo} realizado={realizado} atraso={atrasoPct} disabled={vizMode !== 'fisico' || isDragging}>
+          <ProgressCard
+            minHeight={50}
+            borderRadius={10}
+            title={latest?.nome || 'Item sem nome'}
+            titleSize={14}
+            titleColor={VM_NEUTRAL.text3}
+            segments={segments}
+            onClick={() => onClick(item)}
+            dragHandleProps={dragHandleProps}
+            dragging={isDragging}
+          />
+        </FisicoTooltip>
       </Tooltip>
     </div>
   );
@@ -403,23 +409,27 @@ const GrupoHeader = ({ grupo, dragHandleProps, onToggle, onRenameGroup, vizMode 
 
   const segments = buildSegments(vizMode, { solicitado, recebido, gasto, realizadoPct: realizado, ativoPct: ativo, overduePct: overdue, forceWarn: hasOverrun });
 
+  const atrasoPct = Math.max(0, overdue - realizado);
+
   return (
     <div style={{ height: '100%' }} onClick={onToggle}>
       <Tooltip solicitado={solicitado} recebido={recebido} gasto={gasto} warn={hasOverrun || gasto > recebido} disabled={vizMode !== 'financeiro' || isDragging}>
-        <ProgressCard
-          minHeight={56}
-          borderRadius={10}
-          title={grupo.nome}
-          titleSize={15}
-          titleColor={VM_NEUTRAL.text3}
-          onTitleEdit={onRenameGroup}
-          expandable
-          collapsed={grupo.collapsed}
-          onToggle={onToggle}
-          segments={segments}
-          dragHandleProps={dragHandleProps}
-          dragging={isDragging}
-        />
+        <FisicoTooltip futuro={Math.max(0, 100 - ativo)} planejado={ativo} realizado={realizado} atraso={atrasoPct} disabled={vizMode !== 'fisico' || isDragging}>
+          <ProgressCard
+            minHeight={56}
+            borderRadius={10}
+            title={grupo.nome}
+            titleSize={15}
+            titleColor={VM_NEUTRAL.text3}
+            onTitleEdit={onRenameGroup}
+            expandable
+            collapsed={grupo.collapsed}
+            onToggle={onToggle}
+            segments={segments}
+            dragHandleProps={dragHandleProps}
+            dragging={isDragging}
+          />
+        </FisicoTooltip>
       </Tooltip>
     </div>
   );

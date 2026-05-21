@@ -353,17 +353,32 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
     let segments;
     if (vizMode === 'fisico') {
       const etapaStart = new Date(mesToStartISO(etapa.mes) + 'T00:00:00');
-      const etapaEnd   = new Date(mesToEndISO(etapa.mes) + 'T00:00:00');
       const isStarted  = etapaStart <= today;
       const warn       = etapaShowsWarning(etapa);
       const fp         = warn ? VM_WARNING : VM_FISICO;
-      const pctLabel   = `${Number(etapa.percentual) || 0}%`;
+      const pct        = Number(etapa.percentual) || 0;
       const percReal   = Number(etapa.percentualRealizado) || 0;
+      const pctLabel   = `${pct}%`;
+      const realizedAbs = pct * percReal / 100;
+      const activeLabel = isStarted ? (warn ? Math.max(0, Math.round(pct - realizedAbs)) : pct) : null;
       segments = [
-        { pct: 100,              bg: VM_NEUTRAL.bg3,  label: pctLabel,                  labelColor: VM_NEUTRAL.text1 },
-        { pct: isStarted ? 100 : 0, bg: fp.active,   label: isStarted ? pctLabel : null, labelColor: fp.text2 },
-        { pct: isStarted ? percReal : 0, bg: fp.complete, label: isStarted && percReal > 0 ? `${Math.round(percReal)}%` : null, labelColor: fp.text1 },
+        { pct: 100,                       bg: VM_NEUTRAL.bg3,     label: pctLabel,                                                               labelColor: VM_NEUTRAL.text1 },
+        { pct: isStarted ? 100 : 0,       bg: fp.active,          label: activeLabel != null ? `${activeLabel}%` : null,                         labelColor: fp.text2 },
+        { pct: isStarted ? percReal : 0,  bg: VM_FISICO.complete, label: isStarted && percReal > 0 ? `${Math.round(realizedAbs)}%` : null,       labelColor: VM_FISICO.text1 },
       ];
+      const futuro    = isStarted ? 0 : pct;
+      const planejado = isStarted ? pct : 0;
+      const realizado = isStarted ? pct * percReal / 100 : 0;
+      const atraso    = warn ? Math.max(0, pct - realizado) : 0;
+      return (
+        <div style={{ position: 'absolute', left: barLeft, width: barWidth, height: GANTT_BAR_H, top: '50%', transform: 'translateY(-50%)' }}>
+          <FisicoTooltip futuro={futuro} planejado={planejado} realizado={realizado} atraso={atraso} wrapperStyle={{ height: GANTT_BAR_H }}>
+            <div style={{ height: GANTT_BAR_H, borderRadius: 8, overflow: 'hidden' }}>
+              <ProgressCard segments={segments} minHeight={GANTT_BAR_H} borderRadius={8} />
+            </div>
+          </FisicoTooltip>
+        </div>
+      );
     } else {
       const budget   = (Number(etapa.orcamentoMaterial) || 0) + (Number(etapa.orcamentoMaoDeObra) || 0);
       const gasto    = (Number(etapa.gastoMaterial) || 0) + (Number(etapa.gastoMaoDeObra) || 0);
@@ -380,12 +395,6 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
         </div>
       );
     }
-
-    return (
-      <div style={{ position: 'absolute', left: barLeft, width: barWidth, height: GANTT_BAR_H, top: '50%', transform: 'translateY(-50%)', borderRadius: 8, overflow: 'hidden' }}>
-        <ProgressCard segments={segments} minHeight={GANTT_BAR_H} borderRadius={8} />
-      </div>
-    );
   };
 
   // ── GanttGroupBar — aggregate bar for one month in a group ───────────
@@ -397,11 +406,12 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
 
     if (vizMode === 'fisico') {
       let totalPct = 0, realizadoPct = 0, ativoPct = 0, overduePct = 0;
+      const numItems = grupo.items.length || 1;
       const mesStart = new Date(mesToStartISO(mes) + 'T00:00:00');
-      const mesEnd   = new Date(mesToEndISO(mes) + 'T00:00:00');
       grupo.items.forEach(item => {
         const latest = item.versions[item.versions.length - 1];
-        latest.etapas.filter(e => e.mes === mes).forEach(e => {
+        const etapasInMonth = latest.etapas.filter(e => e.mes === mes);
+        etapasInMonth.forEach(e => {
           hasEtapas = true;
           const pct = Number(e.percentual) || 0;
           totalPct += pct;
@@ -416,13 +426,31 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
       const norm = totalPct > 0 ? 100 / totalPct : 0;
       const rp   = Math.min(100, realizadoPct * norm);
       const ap   = Math.min(100, ativoPct * norm);
+      const futuroPct = Math.max(0, 100 - ap);
       const warn = overduePct > 0;
       const fp   = warn ? VM_WARNING : VM_FISICO;
+      const atrasoPct = Math.max(0, Math.min(100, overduePct * norm) - rp);
+      // Average labels: divide accumulated sums by item count so months sum to 100%
+      const avgTotal    = Math.round(totalPct / numItems);
+      const avgAtivo    = Math.round(ativoPct / numItems);
+      const avgRealizado = Math.round(realizadoPct / numItems);
+      const apLabel     = warn ? Math.max(0, avgAtivo - avgRealizado) : avgAtivo;
       segments = [
-        { pct: 100, bg: VM_NEUTRAL.bg3, label: `${Math.round(totalPct)}%`,           labelColor: VM_NEUTRAL.text1 },
-        { pct: ap,  bg: fp.active,      label: ap > 0 ? `${Math.round(ap)}%` : null, labelColor: fp.text2 },
-        { pct: rp,  bg: fp.complete,    label: rp > 0 ? `${Math.round(rp)}%` : null, labelColor: fp.text1 },
+        { pct: 100, bg: VM_NEUTRAL.bg3,    label: `${avgTotal}%`,                         labelColor: VM_NEUTRAL.text1 },
+        { pct: ap,  bg: fp.active,          label: ap > 0 ? `${apLabel}%` : null,          labelColor: fp.text2 },
+        { pct: rp,  bg: VM_FISICO.complete, label: rp > 0 ? `${avgRealizado}%` : null,     labelColor: VM_FISICO.text1 },
       ];
+      const barLeft = col.x - groupOriginX + CARD_PAD + 8;
+      const barWidth = col.width - 16;
+      return (
+        <div style={{ position: 'absolute', left: barLeft, width: barWidth, height: GANTT_BAR_H, top: '50%', transform: 'translateY(-50%)' }}>
+          <FisicoTooltip futuro={futuroPct} planejado={ap} realizado={rp} atraso={atrasoPct} wrapperStyle={{ height: GANTT_BAR_H }}>
+            <div style={{ height: GANTT_BAR_H, borderRadius: 8, overflow: 'hidden' }}>
+              <ProgressCard segments={segments} minHeight={GANTT_BAR_H} borderRadius={8} />
+            </div>
+          </FisicoTooltip>
+        </div>
+      );
     } else {
       let budget = 0, recebidoSum = 0, gasto = 0, hasMonthOverrun = false;
       grupo.items.forEach(item => {
@@ -452,14 +480,6 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
       );
     }
 
-    const barLeft  = col.x - groupOriginX + CARD_PAD + 8;
-    const barWidth = col.width - 16;
-
-    return (
-      <div style={{ position: 'absolute', left: barLeft, width: barWidth, height: GANTT_BAR_H, top: '50%', transform: 'translateY(-50%)', borderRadius: 8, overflow: 'hidden' }}>
-        <ProgressCard segments={segments} minHeight={GANTT_BAR_H} borderRadius={8} />
-      </div>
-    );
   };
 
   // ── GanttItemCard — white card (bars only) + title to its left ───────

@@ -333,4 +333,95 @@ const Tooltip = ({ children, solicitado = 0, recebido = 0, gasto = 0, warn = fal
   );
 };
 
-Object.assign(window, { DrawerHeader, ValueTag, SegBar, Tooltip, fmtBRLFull });
+// ── FisicoTooltip — hover tooltip for FÍSICO progress bars ──────────────────
+const FisicoTooltip = ({ children, futuro = 0, planejado = 0, realizado = 0, atraso = 0, disabled = false, wrapperStyle = {} }) => {
+  const [rect, setRect] = useStateDH(null);
+  const timerRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const dismiss = () => { clearTimeout(timerRef.current); setRect(null); };
+    window.addEventListener('tooltip-drag-start', dismiss);
+    return () => window.removeEventListener('tooltip-drag-start', dismiss);
+  }, []);
+
+  if (disabled) return children;
+
+  const scheduleShow = (el) => {
+    if (window.__tooltipDragBlocked) return;
+    clearTimeout(timerRef.current);
+    const captured = el.getBoundingClientRect();
+    timerRef.current = setTimeout(() => {
+      if (!window.__tooltipDragBlocked) setRect(captured);
+    }, 1000);
+  };
+  const show = (e) => scheduleShow(e.currentTarget);
+  const move = (e) => { if (!rect) scheduleShow(e.currentTarget); };
+  const hide = () => { clearTimeout(timerRef.current); setRect(null); };
+
+  const rows = [
+    { label: 'Planejamento futuro',  value: `${Math.round(futuro)}%`,    color: VM_NEUTRAL.text1 },
+    { label: 'Planejado para o mês', value: `${Math.round(planejado)}%`, color: VM_FISICO.active },
+    { label: 'Progresso realizado',  value: `${Math.round(realizado)}%`, color: VM_FISICO.complete },
+    { label: 'Atividades em atraso', value: `${Math.round(atraso)}%`,    color: VM_WARNING.active },
+  ];
+
+  const panel = rect && ReactDOM.createPortal(
+    <div style={{
+      position: 'fixed',
+      top: rect.top + rect.height / 2,
+      left: rect.right - 20,
+      transform: 'translateY(-50%)',
+      zIndex: 99999,
+      pointerEvents: 'none',
+    }}>
+      <div style={{
+        position: 'relative',
+        background: 'white',
+        border: `1px solid ${VM_NEUTRAL.bg3}`,
+        borderRadius: 8,
+        boxShadow: '0 4px 16px rgba(13,27,38,0.14)',
+        padding: '8px 12px',
+        minWidth: 160,
+        whiteSpace: 'nowrap',
+      }}>
+        <div style={{
+          position: 'absolute',
+          left: -5, top: '50%',
+          transform: 'translateY(-50%) rotate(45deg)',
+          width: 9, height: 9,
+          background: 'white',
+          borderLeft: `1px solid ${VM_NEUTRAL.bg3}`,
+          borderBottom: `1px solid ${VM_NEUTRAL.bg3}`,
+        }} />
+        {rows.map((row, i, arr) => (
+          <div key={row.label} style={{
+            borderTop: i > 0 ? `1px solid ${VM_NEUTRAL.bg2}` : 'none',
+            paddingTop: i > 0 ? 6 : 0,
+            paddingBottom: i < arr.length - 1 ? 6 : 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+          }}>
+            <div style={{
+              fontSize: 9, fontWeight: 600, fontFamily: 'var(--font-display)',
+              color: VM_NEUTRAL.text2,
+            }}>
+              {row.label}
+            </div>
+            <div style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-mono)', color: row.color }}>
+              {row.value}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>,
+    document.body
+  );
+
+  return (
+    <div style={{ height: '100%', ...wrapperStyle }} onMouseEnter={show} onMouseMove={move} onMouseLeave={hide}>
+      {children}
+      {panel}
+    </div>
+  );
+};
+
+Object.assign(window, { DrawerHeader, ValueTag, SegBar, Tooltip, FisicoTooltip, fmtBRLFull });
