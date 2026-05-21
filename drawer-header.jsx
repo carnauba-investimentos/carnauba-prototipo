@@ -1,5 +1,9 @@
 // drawer-header.jsx — Parametric DrawerHeader shared by ItemDrawer and MonthCard
 const { React: _dh_React } = window;
+const { useState: useStateDH } = React;
+
+const fmtBRLFull = (v) =>
+  'R$ ' + new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(Number(v) || 0);
 
 // ── ValueTag ──────────────────────────────────────────────────────────────────
 // A compact labeled value badge.
@@ -228,4 +232,105 @@ const DrawerHeader = ({
   );
 };
 
-Object.assign(window, { DrawerHeader, ValueTag, SegBar });
+// ── Tooltip ───────────────────────────────────────────────────────────────────
+// Hover tooltip for FINANCEIRO progress bars showing exact BRL values.
+// Uses ReactDOM.createPortal to document.body so it escapes transforms, stacking
+// contexts, and overflow:hidden from DnD draggables and scroll containers.
+// Props: solicitado, recebido, gasto (numbers), warn (bool), disabled (bool), children
+// Global drag-suppression flag. Set by DragDropContext callbacks in app.jsx.
+// window.__tooltipDragBlocked = true while dragging or within 1s after drop.
+window.__tooltipDragBlocked = false;
+
+const Tooltip = ({ children, solicitado = 0, recebido = 0, gasto = 0, warn = false, disabled = false, wrapperStyle = {} }) => {
+  const [rect, setRect] = useStateDH(null);
+  const timerRef = React.useRef(null);
+  const palette = warn ? VM_WARNING : VM_FINANCEIRO;
+
+  React.useEffect(() => {
+    const dismiss = () => { clearTimeout(timerRef.current); setRect(null); };
+    window.addEventListener('tooltip-drag-start', dismiss);
+    return () => window.removeEventListener('tooltip-drag-start', dismiss);
+  }, []);
+
+  if (disabled) return children;
+
+  const scheduleShow = (el) => {
+    if (window.__tooltipDragBlocked) return;
+    clearTimeout(timerRef.current);
+    const captured = el.getBoundingClientRect();
+    timerRef.current = setTimeout(() => {
+      if (!window.__tooltipDragBlocked) setRect(captured);
+    }, 500);
+  };
+  const show  = (e) => scheduleShow(e.currentTarget);
+  const move  = (e) => { if (!rect) scheduleShow(e.currentTarget); };
+  const hide  = () => { clearTimeout(timerRef.current); setRect(null); };
+
+  const panel = rect && ReactDOM.createPortal(
+    <div style={{
+      position: 'fixed',
+      top: rect.top + rect.height / 2,
+      left: rect.right - 20,
+      transform: 'translateY(-50%)',
+      zIndex: 99999,
+      pointerEvents: 'none',
+    }}>
+      {/* Box with overflow:visible so the arrow pseudo-element bleeds out */}
+      <div style={{
+        position: 'relative',
+        background: 'white',
+        border: `1px solid ${VM_NEUTRAL.bg3}`,
+        borderRadius: 8,
+        boxShadow: '0 4px 16px rgba(13,27,38,0.14)',
+        padding: '8px 12px',
+        minWidth: 140,
+        whiteSpace: 'nowrap',
+      }}>
+        {/* Arrow: rotated square, same bg+border, left side border clipped by box */}
+        <div style={{
+          position: 'absolute',
+          left: -5, top: '50%',
+          transform: 'translateY(-50%) rotate(45deg)',
+          width: 9, height: 9,
+          background: 'white',
+          borderLeft: `1px solid ${VM_NEUTRAL.bg3}`,
+          borderBottom: `1px solid ${VM_NEUTRAL.bg3}`,
+          borderTop: 'none',
+          borderRight: 'none',
+        }} />
+      {[
+        { label: 'SOLICITADO', value: fmtBRLFull(solicitado), color: 'rgb(143,153,162)' },
+        { label: 'RECEBIDO',   value: fmtBRLFull(recebido),   color: palette.active },
+        { label: 'GASTO',      value: fmtBRLFull(gasto),      color: palette.complete },
+      ].map((row, i, arr) => (
+        <div key={row.label} style={{
+          borderTop: i > 0 ? `1px solid ${VM_NEUTRAL.bg2}` : 'none',
+          paddingTop: i > 0 ? 6 : 0,
+          paddingBottom: i < arr.length - 1 ? 6 : 0,
+        }}>
+          <div style={{
+            fontSize: 8, fontWeight: 700, textTransform: 'uppercase',
+            letterSpacing: '0.08em', fontFamily: 'var(--font-mono)',
+            color: VM_NEUTRAL.text1, opacity: 0.6, marginBottom: 2,
+          }}>
+            {row.label}
+          </div>
+          <div style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-mono)', color: row.color }}>
+            {row.value}
+          </div>
+        </div>
+      ))}
+      </div>
+    </div>,
+    document.body
+  );
+
+  return (
+    <div style={{ height: '100%', ...wrapperStyle }} onMouseEnter={show} onMouseMove={move} onMouseLeave={hide}>
+      {children}
+      {panel}
+    </div>
+  );
+};
+
+Object.assign(window, { DrawerHeader, ValueTag, SegBar, Tooltip, fmtBRLFull });

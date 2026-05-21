@@ -334,6 +334,16 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
       const gasto    = (Number(etapa.gastoMaterial) || 0) + (Number(etapa.gastoMaoDeObra) || 0);
       const recebido = Number(etapa.valorRecebido) || 0;
       segments = buildFinancialSegments(budget, recebido, gasto);
+      const _b = budget, _g = gasto, _r = recebido;
+      return (
+        <div style={{ position: 'absolute', left: barLeft, width: barWidth, height: GANTT_BAR_H, top: '50%', transform: 'translateY(-50%)' }}>
+          <Tooltip solicitado={_b} recebido={_r} gasto={_g} warn={_g > _r} wrapperStyle={{ height: GANTT_BAR_H }}>
+            <div style={{ height: GANTT_BAR_H, borderRadius: 8, overflow: 'hidden' }}>
+              <ProgressCard segments={segments} minHeight={GANTT_BAR_H} borderRadius={8} />
+            </div>
+          </Tooltip>
+        </div>
+      );
     }
 
     return (
@@ -391,6 +401,17 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
       });
       if (!hasEtapas) return null;
       segments = buildFinancialSegments(budget, recebidoSum, gasto);
+      const barLeft  = col.x - groupOriginX + CARD_PAD + 8;
+      const barWidth = col.width - 16;
+      return (
+        <div style={{ position: 'absolute', left: barLeft, width: barWidth, height: GANTT_BAR_H, top: '50%', transform: 'translateY(-50%)' }}>
+          <Tooltip solicitado={budget} recebido={recebidoSum} gasto={gasto} warn={gasto > recebidoSum} wrapperStyle={{ height: GANTT_BAR_H }}>
+            <div style={{ height: GANTT_BAR_H, borderRadius: 8, overflow: 'hidden' }}>
+              <ProgressCard segments={segments} minHeight={GANTT_BAR_H} borderRadius={8} />
+            </div>
+          </Tooltip>
+        </div>
+      );
     }
 
     const barLeft  = col.x - groupOriginX + CARD_PAD + 8;
@@ -505,7 +526,7 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
           pointerEvents: 'none', overflow: 'visible',
         }}>
           {/* Group bars — centered in header area */}
-          <div style={{ position: 'relative', height: headerH - 16 }}>
+          <div style={{ position: 'relative', height: headerH - 16, pointerEvents: 'auto' }}>
             {sortedMonths.map(mes => (
               <GanttGroupBar key={mes} grupo={grupo} mes={mes} groupOriginX={groupOriginX} vizMode={vizMode} />
             ))}
@@ -576,8 +597,38 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
         </div>
 
         {/* ── Flat rows with drag-drop ── */}
-        <DragDropContext onDragEnd={onDragEnd}>
-          <Droppable droppableId="groups-list" type="GROUP">
+        <DragDropContext
+          onDragStart={() => { window.__tooltipDragBlocked = true; window.dispatchEvent(new Event('tooltip-drag-start')); }}
+          onDragEnd={(result) => {
+            onDragEnd(result);
+            setTimeout(() => { window.__tooltipDragBlocked = false; }, 50);
+          }}
+        >
+          <Droppable
+            droppableId="groups-list"
+            type="GROUP"
+            renderClone={(provided, snapshot, rubric) => {
+              const grupo = grupos[rubric.source.index];
+              const h = grupo.collapsed ? GROUP_ROW_H_COLLAPSED : GROUP_ROW_H;
+              return (
+                <div
+                  ref={provided.innerRef}
+                  {...provided.draggableProps}
+                  {...provided.dragHandleProps}
+                  style={{ ...provided.draggableProps.style, width: LEFT_COL_W, height: h, padding: '8px', boxSizing: 'border-box' }}
+                >
+                  <GrupoHeader
+                    grupo={grupo}
+                    dragHandleProps={null}
+                    onToggle={() => {}}
+                    onRenameGroup={null}
+                    vizMode={vizMode}
+                    isDragging={true}
+                  />
+                </div>
+              );
+            }}
+          >
             {(provided) => (
               <div ref={provided.innerRef} {...provided.droppableProps}>
                 {grupos.map((grupo, gIdx) => (
@@ -601,6 +652,7 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
                               onToggle={() => onToggleGroup(grupo.id)}
                               onRenameGroup={(name) => onRenameGroup(grupo.id, name)}
                               vizMode={vizMode}
+                              isDragging={snapshot.isDragging}
                             />
                           </div>
                           <RowRight bg="var(--color-gray-100)" />
@@ -608,7 +660,31 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
 
                         {/* Item rows */}
                         {!grupo.collapsed && (
-                          <Droppable droppableId={grupo.id} type="ITEM">
+                          <Droppable
+                            droppableId={grupo.id}
+                            type="ITEM"
+                            renderClone={(provided, snapshot, rubric) => {
+                              const item = grupo.items[rubric.source.index];
+                              return (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                  style={{ ...provided.draggableProps.style, width: LEFT_COL_W, height: ITEM_ROW_H, padding: '0 8px', display: 'flex', alignItems: 'stretch', boxSizing: 'border-box' }}
+                                >
+                                  <div style={{ flex: 1, padding: '9px 8px' }}>
+                                    <ItemCronograma
+                                      item={item}
+                                      dragHandleProps={null}
+                                      onClick={() => {}}
+                                      vizMode={vizMode}
+                                      isDragging={true}
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            }}
+                          >
                             {(provided, snapshot) => (
                               <div
                                 ref={provided.innerRef}

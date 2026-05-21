@@ -128,7 +128,7 @@ const buildFinancialSegments = (solicitado, recebido, gasto) => {
   const recPct  = s > 0 ? Math.min(100, r / s * 100) : 0;
   const gasPct  = s > 0 ? Math.min(100, g / s * 100) : 0;
   return [
-    { pct: 100,    bg: VM_NEUTRAL.bg3,    label: s > 0 ? fmtK(s) : null, labelColor: VM_NEUTRAL.text1 },
+    { pct: 100,    bg: VM_NEUTRAL.bg3,    label: s > 0 ? fmtK(s) : '0k', labelColor: VM_NEUTRAL.text1 },
     { pct: recPct, bg: palette.active,    label: r > 0 ? fmtK(r) : null, labelColor: warn ? VM_WARNING.text1 : VM_FINANCEIRO.text1 },
     { pct: gasPct, bg: palette.complete,  label: g > 0 ? fmtK(g) : null, labelColor: warn ? VM_WARNING.text1 : VM_FINANCEIRO.text2 },
   ];
@@ -190,6 +190,7 @@ const ProgressCard = ({
   segments = [],
   onClick,
   dragHandleProps,
+  dragging = false,
 }) => {
   const [editingName, setEditingName] = useStateCi(false);
   const [nameValue, setNameValue]     = useStateCi(title || '');
@@ -331,7 +332,7 @@ const ProgressCard = ({
 };
 
 // ── ItemCronograma ────────────────────────────────────────────────────
-const ItemCronograma = ({ item, dragHandleProps, onClick, vizMode = 'financeiro' }) => {
+const ItemCronograma = ({ item, dragHandleProps, onClick, vizMode = 'financeiro', isDragging = false }) => {
   const latest   = item.versions[item.versions.length - 1];
   const solicitado = getTotalBudget(latest);
   const gasto      = getTotalSpent(latest);
@@ -343,22 +344,25 @@ const ItemCronograma = ({ item, dragHandleProps, onClick, vizMode = 'financeiro'
   const segments = buildSegments(vizMode, { solicitado, recebido, gasto, realizadoPct: realizado, ativoPct: ativo, overduePct: overdue });
 
   return (
-    <ProgressCard
-      minHeight={50}
-      borderRadius={10}
-      title={latest?.nome || 'Item sem nome'}
-      titleSize={14}
-      titleColor={VM_NEUTRAL.text3}
-      segments={segments}
-      onClick={() => onClick(item)}
-      dragHandleProps={dragHandleProps}
-    />
+    <Tooltip solicitado={solicitado} recebido={recebido} gasto={gasto} warn={gasto > recebido} disabled={vizMode !== 'financeiro' || isDragging}>
+      <ProgressCard
+        minHeight={50}
+        borderRadius={10}
+        title={latest?.nome || 'Item sem nome'}
+        titleSize={14}
+        titleColor={VM_NEUTRAL.text3}
+        segments={segments}
+        onClick={() => onClick(item)}
+        dragHandleProps={dragHandleProps}
+        dragging={isDragging}
+      />
+    </Tooltip>
   );
 };
 
 // ── GrupoHeader — left-column group header row (used inside Gantt rows) ─
 // Renders only the header bar (no body/footer — those are handled by app.jsx row structure).
-const GrupoHeader = ({ grupo, dragHandleProps, onToggle, onRenameGroup, vizMode = 'financeiro' }) => {
+const GrupoHeader = ({ grupo, dragHandleProps, onToggle, onRenameGroup, vizMode = 'financeiro', isDragging = false }) => {
   const solicitado = getGroupBudget(grupo);
   const gasto      = getGroupSpent(grupo);
   const recebido   = getGroupRecebido(grupo);
@@ -369,19 +373,22 @@ const GrupoHeader = ({ grupo, dragHandleProps, onToggle, onRenameGroup, vizMode 
   const segments = buildSegments(vizMode, { solicitado, recebido, gasto, realizadoPct: realizado, ativoPct: ativo, overduePct: overdue });
 
   return (
-    <ProgressCard
-      minHeight={56}
-      borderRadius={10}
-      title={grupo.nome}
-      titleSize={15}
-      titleColor={VM_NEUTRAL.text3}
-      onTitleEdit={onRenameGroup}
-      expandable
-      collapsed={grupo.collapsed}
-      onToggle={onToggle}
-      segments={segments}
-      dragHandleProps={dragHandleProps}
-    />
+    <Tooltip solicitado={solicitado} recebido={recebido} gasto={gasto} warn={gasto > recebido} disabled={vizMode !== 'financeiro' || isDragging}>
+      <ProgressCard
+        minHeight={56}
+        borderRadius={10}
+        title={grupo.nome}
+        titleSize={15}
+        titleColor={VM_NEUTRAL.text3}
+        onTitleEdit={onRenameGroup}
+        expandable
+        collapsed={grupo.collapsed}
+        onToggle={onToggle}
+        segments={segments}
+        dragHandleProps={dragHandleProps}
+        dragging={isDragging}
+      />
+    </Tooltip>
   );
 };
 
@@ -477,6 +484,7 @@ const GrupoItensCronograma = ({ grupo, dragHandleProps, onToggle, onItemClick, o
                     dragHandleProps={provided.dragHandleProps}
                     onClick={onItemClick}
                     vizMode={vizMode}
+                    isDragging={snapshot.isDragging}
                   />
                 </div>
               )}

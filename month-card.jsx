@@ -88,6 +88,9 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly, vizMode = 'financeiro',
   // Warning: FISICO only, past month, not 100% realized
   const showWarning = vizMode === 'fisico' && isOverdue && !isDone;
 
+  // FINANCEIRO disabled: recebido = 0 → muted grayscale header, inputs still work
+  const financeiroDisabled = vizMode === 'financeiro' && recebido === 0;
+
   // Circle appearance
   const circleFill = isDone
     ? (vizMode === 'fisico' ? VM_FISICO.complete : 'var(--color-success)')
@@ -95,7 +98,9 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly, vizMode = 'financeiro',
   const circleOpacity = (!isDone && !isCurrentMonth && !isOverdue) ? 0.55 : 1;
 
   // Card border
-  const cardBorderColor = fisicoComplete
+  const cardBorderColor = financeiroDisabled
+    ? VM_NEUTRAL.bg3
+    : fisicoComplete
     ? 'rgba(50,137,192,0.5)'
     : showWarning
     ? 'rgba(192,138,42,0.5)'
@@ -116,7 +121,13 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly, vizMode = 'financeiro',
     : [];
 
   // ── FINANCEIRO StatusDiv: 3 ValueTag badges ────────────────────────────────
-  const financeiroStatusDiv = (
+  const financeiroStatusDiv = financeiroDisabled ? (
+    <div style={{ display: 'flex', gap: 6 }}>
+      <ValueTag label="GASTO"      value={fmtBRLMCShort(gasto)}      bg="#8A98AC" color="white" />
+      <ValueTag label="RECEBIDO"   value={fmtBRLMCShort(recebido)}   bg="#8A98AC" color="white" />
+      <ValueTag label="SOLICITADO" value={fmtBRLMCShort(solicitado)} bg={VM_NEUTRAL.bg3} color={VM_NEUTRAL.text2} />
+    </div>
+  ) : (
     <div style={{ display: 'flex', gap: 6 }}>
       <ValueTag
         label="GASTO"
@@ -180,11 +191,12 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly, vizMode = 'financeiro',
     <div style={{
       borderRadius: 'var(--radius-lg)',
       border: `1.5px solid ${cardBorderColor}`,
-      background: '#EEF3F8',
+      background: financeiroDisabled ? VM_NEUTRAL.bg1 : '#EEF3F8',
       overflow: 'hidden',
       marginBottom: 12,
     }}>
       {/* ── Header (via DrawerHeader) ── */}
+      <div style={financeiroDisabled ? { filter: 'grayscale(1)', opacity: 0.8 } : {}}>
       <DrawerHeader
         circle={{
           content: isDone ? <_MC_IconCheck /> : index + 1,
@@ -205,11 +217,12 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly, vizMode = 'financeiro',
         padding="14px 18px"
         gap={12}
       />
+      </div>
 
       {/* ── Body: mode-specific inputs (edit only) ── */}
       {!isReadOnly && (
         <div style={{
-          borderTop: '1px solid rgba(66,140,185,0.2)',
+          borderTop: `1px solid ${financeiroDisabled ? VM_NEUTRAL.bg3 : 'rgba(66,140,185,0.2)'}`,
           padding: '14px 18px 16px',
           background: 'var(--color-white)',
         }}>
@@ -222,7 +235,7 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly, vizMode = 'financeiro',
                 fontSize: 13, color: 'var(--color-navy-70)', lineHeight: 1.5,
                 flexBasis: '46%', flexShrink: 0,
               }}>
-                Quanto já foi gasto do valor recebido nesse mês?
+                Do valor recebido nesse mês, <br/> <span style={{ fontWeight: 700 }}>quanto já foi gasto?</span>
               </div>
 
               {/* Answer: 2 outlined input boxes */}
@@ -281,7 +294,7 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly, vizMode = 'financeiro',
             /* FISICO body: percentualRealizado input */
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
               <div style={{ fontSize: 13, color: 'var(--color-navy-70)', lineHeight: 1.5 }}>
-                Qual percentual das atividades do mês já foram realizadas?
+                Qual percentual das atividades do mês já foi realizado?
               </div>
               <div style={{
                 flex: 1,
