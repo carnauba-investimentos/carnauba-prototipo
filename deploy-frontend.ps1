@@ -29,4 +29,4 @@ Copy-Item "$root\app.jsx",
 Copy-Item "$root\design-system" -Destination "$dest\design-system" -Recurse
 
 Set-Location "$root\carnauba-api"
-npx wrangler pages deploy ..\.deploy --project-name=clientes-mobiliar3d --commit-dirty=true
+npx wrangler pages deploy ..\.deploy --project-name=clientes-mobiliar3d --branch=main --commit-dirty=true
