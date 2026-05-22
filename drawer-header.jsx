@@ -360,7 +360,7 @@ const FisicoTooltip = ({ children, futuro = 0, planejado = 0, realizado = 0, atr
 
   const rows = [
     { label: 'Planejamento futuro',  value: `${Math.round(futuro)}%`,    color: VM_NEUTRAL.text1 },
-    { label: 'Planejado para o mês', value: `${Math.round(planejado)}%`, color: VM_FISICO.active },
+    { label: 'Pendente no mês', value: `${Math.round(planejado)}%`, color: VM_FISICO.active },
     { label: 'Progresso realizado',  value: `${Math.round(realizado)}%`, color: VM_FISICO.complete },
     { label: 'Atividades em atraso', value: `${Math.round(atraso)}%`,    color: VM_WARNING.active },
   ];

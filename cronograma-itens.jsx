@@ -231,7 +231,8 @@ const ProgressCard = ({
 }) => {
   const [editingName, setEditingName] = useStateCi(false);
   const [nameValue, setNameValue]     = useStateCi(title || '');
-  const inputRef = useRefCi(null);
+  const inputRef  = useRefCi(null);
+  const headerRef = useRefCi(null);
 
   useEffectCi(() => { setNameValue(title || ''); }, [title]);
   useEffectCi(() => { if (editingName && inputRef.current) inputRef.current.focus(); }, [editingName]);
@@ -252,6 +253,7 @@ const ProgressCard = ({
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* ── Header: segments fill + title overlay ── */}
       <div
+        ref={headerRef}
         {...dragHandleProps}
         onClick={onClick}
         style={{
@@ -277,11 +279,12 @@ const ProgressCard = ({
               position: 'absolute', top: 0, bottom: 0, left: `${left}%`,
               width: `${pct}%`,
               background: seg.bg,
+              overflow: 'hidden',
               transition: 'width 0.35s var(--ease-out)',
             }}>
               {seg.label && pct > 0 && (
                 <span style={{
-                  position: 'absolute', bottom: 6, right: 6,
+                  position: 'absolute', bottom: 6, left: 6,
                   fontFamily: 'var(--font-mono)',
                   fontSize: seg.labelSize || 11,
                   fontWeight: 700,
@@ -397,7 +400,7 @@ const ItemCronograma = ({ item, dragHandleProps, onClick, vizMode = 'financeiro'
       }}
     >
       <Tooltip solicitado={solicitado} recebido={recebido} gasto={gasto} warn={hasOverrun || gasto > recebido} disabled={vizMode !== 'financeiro' || isDragging}>
-        <FisicoTooltip futuro={Math.max(0, 100 - ativo)} planejado={ativo} realizado={realizado} atraso={atrasoPct} disabled={vizMode !== 'fisico' || isDragging}>
+        <FisicoTooltip futuro={Math.max(0, 100 - ativo)} planejado={Math.max(0, (ativo - overdue) - (realizado - overdueRealizado))} realizado={realizado} atraso={atrasoPct} disabled={vizMode !== 'fisico' || isDragging}>
           <ProgressCard
             minHeight={50}
             borderRadius={10}
@@ -434,7 +437,7 @@ const GrupoHeader = ({ grupo, dragHandleProps, onToggle, onRenameGroup, vizMode 
   return (
     <div style={{ height: '100%' }} onClick={onToggle}>
       <Tooltip solicitado={solicitado} recebido={recebido} gasto={gasto} warn={hasOverrun || gasto > recebido} disabled={vizMode !== 'financeiro' || isDragging}>
-        <FisicoTooltip futuro={Math.max(0, 100 - ativo)} planejado={ativo} realizado={realizado} atraso={atrasoPct} disabled={vizMode !== 'fisico' || isDragging}>
+        <FisicoTooltip futuro={Math.max(0, 100 - ativo)} planejado={Math.max(0, (ativo - overdue) - (realizado - overdueRealizado))} realizado={realizado} atraso={atrasoPct} disabled={vizMode !== 'fisico' || isDragging}>
           <ProgressCard
             minHeight={56}
             borderRadius={10}

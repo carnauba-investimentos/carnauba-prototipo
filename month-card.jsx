@@ -177,12 +177,12 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly, vizMode = 'financeiro',
   // ── FINANCEIRO StatusDiv: 3 ValueTag badges ────────────────────────────────
   const financeiroStatusDiv = financeiroDisabled ? (
     <div style={{ display: 'flex', gap: 6 }}>
-      <ValueTag label="GASTO"      value={fmtBRLMCShort(gasto)}      bg="#8A98AC" color="white" />
+      <ValueTag label="GASTO"      value={fmtBRLMC(gasto)}      bg="#8A98AC" color="white" />
       <div onClick={openRecebidoModal} style={{ cursor: 'pointer' }} title="Editar valores recebidos">
-        <ValueTag label="RECEBIDO" value={fmtBRLMCShort(recebido)} bg="#8A98AC" color="white" />
+        <ValueTag label="RECEBIDO" value={fmtBRLMC(recebido)} bg="#8A98AC" color="white" />
       </div>
       <div ref={solicitadoRef} style={{ position: 'relative' }} onMouseEnter={tip.enter} onMouseLeave={tip.leave}>
-        <ValueTag label="SOLICITADO" value={fmtBRLMCShort(solicitado)} bg={VM_NEUTRAL.bg3} color={VM_NEUTRAL.text2} />
+        <ValueTag label="SOLICITADO" value={fmtBRLMC(solicitado)} bg={VM_NEUTRAL.bg3} color={VM_NEUTRAL.text2} />
         {tip.show && <SolicitadoTooltip mat={etapa.orcamentoMaterial} mo={etapa.orcamentoMaoDeObra} anchorRef={solicitadoRef} />}
       </div>
     </div>
@@ -190,14 +190,14 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly, vizMode = 'financeiro',
     <div style={{ display: 'flex', gap: 6 }}>
       <ValueTag
         label="GASTO"
-        value={fmtBRLMCShort(gasto)}
+        value={fmtBRLMC(gasto)}
         bg={gastoOverrun ? VM_WARNING.active : VM_FINANCEIRO.complete}
         color={gastoOverrun ? VM_WARNING.text1 : 'white'}
       />
       <div onClick={openRecebidoModal} style={{ cursor: 'pointer' }} title="Editar valores recebidos">
         <ValueTag
           label="RECEBIDO"
-          value={fmtBRLMCShort(recebido)}
+          value={fmtBRLMC(recebido)}
           bg={VM_FINANCEIRO.active}
           color={VM_FINANCEIRO.text1}
         />
@@ -205,7 +205,7 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly, vizMode = 'financeiro',
       <div ref={solicitadoRef} style={{ position: 'relative' }} onMouseEnter={tip.enter} onMouseLeave={tip.leave}>
         <ValueTag
           label="SOLICITADO"
-          value={fmtBRLMCShort(solicitado)}
+          value={fmtBRLMC(solicitado)}
           bg={VM_NEUTRAL.bg3}
           color={VM_NEUTRAL.text2}
         />

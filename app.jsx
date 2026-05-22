@@ -357,15 +357,38 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
       const warn         = etapaShowsWarning(etapa);
       const pct          = Number(etapa.percentual) || 0;
       const percReal     = Number(etapa.percentualRealizado) || 0;
-      const realizedAbs  = pct * percReal / 100;
-      const unrealizedAbs = Math.max(0, pct - realizedAbs);
-      const unrealizedBg    = warn ? VM_WARNING.active : VM_FISICO.active;
-      const unrealizedColor = warn ? VM_WARNING.text2 : VM_FISICO.text2;
-      segments = [
-        { pct: 100,                              left: 0,           bg: VM_NEUTRAL.bg3,    label: null,                                                                   labelColor: VM_NEUTRAL.text1 },
-        { pct: realizedAbs,                      left: 0,           bg: VM_FISICO.complete, label: realizedAbs > 0 ? `${Math.round(realizedAbs)}%` : null,               labelColor: VM_FISICO.text1 },
-        { pct: isStarted ? unrealizedAbs : 0,   left: realizedAbs, bg: unrealizedBg,       label: (isStarted && unrealizedAbs > 0) ? `${Math.round(unrealizedAbs)}%` : null, labelColor: unrealizedColor },
-      ];
+      const realizedAbs    = pct * percReal / 100;
+      const unrealizedAbs  = Math.max(0, pct - realizedAbs);
+      // Bar proportions: percReal is 0-100 completion within this etapa (not relative to total item scope)
+      const realizedFrac   = percReal;
+      const unrealizedFrac = Math.max(0, 100 - percReal);
+      const scopeLabel     = `${pct}%`;
+
+      if (!isStarted) {
+        // Future planning: gray bar with scope % label
+        segments = [
+          { pct: 100, left: 0, bg: VM_NEUTRAL.bg3, label: scopeLabel, labelColor: VM_NEUTRAL.text2 },
+        ];
+      } else {
+        const unrealizedBg    = warn ? VM_WARNING.active : VM_FISICO.active;
+        const unrealizedColor = warn ? VM_WARNING.text2 : VM_FISICO.text2;
+        // Labels: when partial progress show each segment's absolute scope contribution; otherwise show total
+        let realizedLabel = null, unrealizedLabel = null;
+        if (realizedFrac === 0) {
+          unrealizedLabel = scopeLabel;
+        } else if (unrealizedFrac === 0) {
+          realizedLabel = scopeLabel;
+        } else {
+          realizedLabel   = `${Math.round(realizedAbs)}%`;
+          unrealizedLabel = `${Math.round(unrealizedAbs)}%`;
+        }
+        segments = [
+          { pct: 100,            left: 0,            bg: VM_NEUTRAL.bg3,    label: null,           labelColor: VM_NEUTRAL.text1 },
+          { pct: realizedFrac,   left: 0,            bg: VM_FISICO.complete, label: realizedLabel,  labelColor: VM_FISICO.text1 },
+          { pct: unrealizedFrac, left: realizedFrac, bg: unrealizedBg,       label: unrealizedLabel, labelColor: unrealizedColor },
+        ];
+      }
+
       const futuro    = isStarted ? 0 : pct;
       const planejado = isStarted ? (warn ? 0 : unrealizedAbs) : 0;
       const realizado = realizedAbs;
@@ -434,16 +457,18 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
 
       const overdueUnrealized    = Math.max(0, op - orp);
       const nonOverdueUnrealized = Math.max(0, (ap - op) - (rp - orp));
-      const futuroPct = Math.max(0, 100 - ap);
-      const atrasoPct = overdueUnrealized;
 
-      // Average labels: divide accumulated sums by item count so months sum to 100%
-      const avgRealizado = Math.round(realizadoPct / numItems);
+      // Average labels (per item): match what bar labels show and what tooltip should display
+      const avgTotal                = Math.round(totalPct / numItems);
+      const avgRealizado            = Math.max(0, Math.round(realizadoPct / numItems));
       const avgOverdueUnrealized    = Math.max(0, Math.round((overduePct - overdueRealizedPct) / numItems));
       const avgNonOverdueUnrealized = Math.max(0, Math.round((ativoPct - overduePct - (realizadoPct - overdueRealizedPct)) / numItems));
+      const avgFuturo               = Math.max(0, Math.round((totalPct - ativoPct) / numItems));
+      // Show scope label on track only for pure future bars (no active segments)
+      const allFuture = rp === 0 && overdueUnrealized === 0 && nonOverdueUnrealized === 0;
 
       segments = [
-        { pct: 100,                  left: 0,                        bg: VM_NEUTRAL.bg3,    label: null,                                                              labelColor: VM_NEUTRAL.text1 },
+        { pct: 100,                  left: 0,                        bg: VM_NEUTRAL.bg3,    label: allFuture ? `${avgTotal}%` : null,                                 labelColor: VM_NEUTRAL.text2 },
         { pct: rp,                   left: 0,                        bg: VM_FISICO.complete, label: rp > 0 ? `${avgRealizado}%` : null,                                labelColor: VM_FISICO.text1 },
         { pct: overdueUnrealized,    left: rp,                       bg: VM_WARNING.active, label: overdueUnrealized > 0 ? `${avgOverdueUnrealized}%` : null,          labelColor: VM_WARNING.text2 },
         { pct: nonOverdueUnrealized, left: rp + overdueUnrealized,   bg: VM_FISICO.active,  label: nonOverdueUnrealized > 0 ? `${avgNonOverdueUnrealized}%` : null,   labelColor: VM_FISICO.text2 },
@@ -452,7 +477,7 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
       const barWidth = col.width - 16;
       return (
         <div style={{ position: 'absolute', left: barLeft, width: barWidth, height: GANTT_BAR_H, top: '50%', transform: 'translateY(-50%)' }}>
-          <FisicoTooltip futuro={futuroPct} planejado={nonOverdueUnrealized} realizado={rp} atraso={atrasoPct} wrapperStyle={{ height: GANTT_BAR_H }}>
+          <FisicoTooltip futuro={avgFuturo} planejado={avgNonOverdueUnrealized} realizado={avgRealizado} atraso={avgOverdueUnrealized} wrapperStyle={{ height: GANTT_BAR_H }}>
             <div style={{ height: GANTT_BAR_H, borderRadius: 8, overflow: 'hidden' }}>
               <ProgressCard segments={segments} minHeight={GANTT_BAR_H} borderRadius={8} />
             </div>
@@ -1158,7 +1183,7 @@ const App = () => {
                 { color: VM_WARNING.active,       label: 'Ultrapassado' },
               ] : [
                 { color: VM_NEUTRAL.bg3,          label: 'Planejamento futuro' },
-                { color: VM_FISICO.active,        label: 'Planejado para o mês' },
+                { color: VM_FISICO.active,        label: 'Pendente no mês' },
                 { color: VM_FISICO.complete,      label: 'Progresso realizado' },
                 { color: VM_WARNING.active,       label: 'Atividades em atraso' },
               ]).map(({ color, label }) => (

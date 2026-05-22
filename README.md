@@ -6,7 +6,7 @@ Aplicação web de gerenciamento de cronograma e orçamento de projetos de inves
 
 - **Modos de visualização (Financeiro / Físico)** — alternados por botões posicionados ao lado do título "Cronograma" no cabeçalho; todos os componentes atualizam simultaneamente
   - **Financeiro** (paleta verde): barras de 3 segmentos mostrando Solicitado → Recebido → Gasto com rótulos em R$ abreviados; alerta (âmbar) se qualquer etapa tem `gasto > recebido` (incluindo recebido = 0 com gasto > 0); a comparação é por etapa individual, não pelo agregado
-  - **Físico** (paleta azul): barras de 3 segmentos mostrando Trilho (100%) → Ativo (todos os meses iniciados) → Realizado (sobreposição escura, `Σ percentual × percentualRealizado / 100`); se algum mês encerrado tem `percentualRealizado < 100`, a barra muda para paleta de alerta (âmbar)
+  - **Físico** (paleta azul): barras de 4 segmentos lado a lado (sem sobreposição): Progresso realizado (azul escuro) → Atividades em atraso não realizadas (âmbar) → Pendente no mês (azul claro) → Planejamento futuro (cinza); rótulos visíveis apenas quando o segmento tem largura suficiente (clipped por `overflow: hidden`)
 - **DrawerHeader — componente paramétrico compartilhado** (`drawer-header.jsx`) — cabeçalho de 2 linhas usado por `ItemDrawer` e `MonthCard`; linha 1: círculo opcional + títulos + `statusDiv` alinhado à direita; linha 2: tags em pílulas; sub-componentes `ValueTag` (badge com rótulo + valor) e `SegBar` (barra de progresso com segmentos sobrepostos e rótulos flutuantes)
 - **ItemDrawer — modos FÍSICO / FINANCEIRO** — cabeçalho mostra 3 `ValueTag` (Gasto / Recebido / Solicitado) no modo Financeiro, ou barra de progresso agregada com segmentos Ativo + Realizado no modo Físico; corpo exibe campos de gasto (Financeiro) ou campo `percentualRealizado %` (Físico); rodapé reorganizado: Deletar + Editar à esquerda, Cancelar + Salvar à direita
 - **MonthCard — modos FÍSICO / FINANCEIRO** — cabeçalho usa `DrawerHeader` com `statusDiv` por modo; no modo Físico: barra cumulativa por mês (cada barra começa onde a anterior terminou); círculo mostra número ou ✓ conforme conclusão; cores de alerta (âmbar) quando mês encerrado e `percentualRealizado < 100`
@@ -14,7 +14,7 @@ Aplicação web de gerenciamento de cronograma e orçamento de projetos de inves
 - **Lógica de alerta unificada** — dois gatilhos independentes por modo:
   - *Físico:* `etapaShowsWarning(e)` — `mês encerrado && percentualRealizado < 100`
   - *Financeiro:* `hasEtapaFinancialOverrun(etapas)` — qualquer etapa com `gasto > recebido` (recebido = 0 com gasto > 0 também dispara)
-- **Badge RECEBIDO clicável no MonthCard** — no modo Financeiro, clicar no badge RECEBIDO abre um modal para inserir `recebidoMaterial` e `recebidoMaoDeObra` separadamente
+- **Badge RECEBIDO clicável no MonthCard** — no modo Financeiro, clicar no badge RECEBIDO abre um modal para inserir `recebidoMaterial` e `recebidoMaoDeObra` separadamente; badges GASTO / RECEBIDO / SOLICITADO exibem valor completo em R$ (ex.: R$ 66.000, sem abreviação em k)
 - **ProgressCard — componente paramétrico unificado** — recebe `segments[]` com cor e rótulo por camada, suporta modo expansível com corpo e rodapé, título editável por duplo-clique e drag-and-drop integrado
 - **Cronograma Gantt interativo** — visualização em meses com barras de progresso por grupo e por item; grupos recolhíveis com drag-and-drop para reordenação
 - **Controle de versões** — cada edição pode gerar uma nova versão do item, preservando o histórico completo; o Gantt exibe V1 e a versão atual lado a lado
