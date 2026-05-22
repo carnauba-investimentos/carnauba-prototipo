@@ -4,8 +4,12 @@ $dest = "$root\.deploy\carnauba\entrega-260406"
 Remove-Item "$root\.deploy" -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -Path $dest -ItemType Directory -Force | Out-Null
 
-Copy-Item "$root\index.html",
-          "$root\app.jsx",
+# Uncomment base href for production deploy
+$indexContent = Get-Content "$root\index.html" -Raw
+$indexContent = $indexContent -replace '<!--\s*(<base href="/carnauba/entrega-260406/">)\s*-->', '$1'
+Set-Content "$dest\index.html" $indexContent -NoNewline
+
+Copy-Item "$root\app.jsx",
           "$root\cronograma-itens.jsx",
           "$root\drawer-header.jsx",
           "$root\item-modal.jsx",
