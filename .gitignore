@@ -10,6 +10,9 @@ node_modules/
 # Frontend deploy staging folder
 .deploy/
 
+# Secrets
+.env
+
 # OS
 .DS_Store
 Thumbs.db

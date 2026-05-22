@@ -1,6 +1,16 @@
 $root = $PSScriptRoot
 $dest = "$root\.deploy\carnauba\entrega-260406"
 
+# Load .env if present
+$envFile = "$root\.env"
+if (Test-Path $envFile) {
+  Get-Content $envFile | ForEach-Object {
+    if ($_ -match '^\s*([^#][^=]+)=(.+)$') {
+      [System.Environment]::SetEnvironmentVariable($matches[1].Trim(), $matches[2].Trim(), 'Process')
+    }
+  }
+}
+
 Remove-Item "$root\.deploy" -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -Path $dest -ItemType Directory -Force | Out-Null
 

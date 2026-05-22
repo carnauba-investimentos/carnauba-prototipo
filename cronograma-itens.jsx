@@ -284,7 +284,7 @@ const ProgressCard = ({
             }}>
               {seg.label && pct > 0 && (
                 <span style={{
-                  position: 'absolute', bottom: 6, left: 6,
+                  position: 'absolute', bottom: 6, right: 6,
                   fontFamily: 'var(--font-mono)',
                   fontSize: seg.labelSize || 11,
                   fontWeight: 700,

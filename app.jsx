@@ -1177,7 +1177,7 @@ const App = () => {
           <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               {(vizMode === 'financeiro' ? [
-                { color: VM_NEUTRAL.bg3,          label: 'Não recebido' },
+                { color: VM_NEUTRAL.bg3,          label: 'Solicitado' },
                 { color: VM_FINANCEIRO.active,    label: 'Recebido' },
                 { color: VM_FINANCEIRO.complete,  label: 'Gasto' },
                 { color: VM_WARNING.active,       label: 'Ultrapassado' },
