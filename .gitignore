@@ -7,6 +7,9 @@ node_modules/
 # Wrangler / Cloudflare Workers build artifacts
 .wrangler/
 
+# Frontend deploy staging folder
+.deploy/
+
 # OS
 .DS_Store
 Thumbs.db

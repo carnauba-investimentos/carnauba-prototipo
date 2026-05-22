@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "deploy:frontend": "powershell -File ../deploy-frontend.ps1",
+    "deploy:all": "npm run deploy && npm run deploy:frontend"
   },
   "devDependencies": {
     "wrangler": "^3"
