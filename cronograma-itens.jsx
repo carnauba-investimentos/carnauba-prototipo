@@ -176,7 +176,7 @@ const buildFisicoSegments = (realizadoPct, ativoPct, overduePct = 0, overdueReal
   const nonOverdueActiveUnrealized = Math.max(0, (ap - op) - (rp - orp));
 
   return [
-    { pct: 100,                      left: 0,                        bg: VM_NEUTRAL.bg3,    label: showTrackLabel ? '100%' : null,                                        labelColor: VM_NEUTRAL.text1 },
+    { pct: 100,                      left: 0,                        bg: VM_NEUTRAL.bg3,    label: showTrackLabel ? `${Math.round(100 - ap)}%` : null,                    labelColor: VM_NEUTRAL.text1 },
     { pct: rp,                       left: 0,                        bg: VM_FISICO.complete, label: rp > 0 ? `${Math.round(rp)}%` : null,                                  labelColor: VM_FISICO.text1 },
     { pct: overdueUnrealized,        left: rp,                       bg: VM_WARNING.active, label: overdueUnrealized > 0 ? `${Math.round(overdueUnrealized)}%` : null,     labelColor: VM_WARNING.text2 },
     { pct: nonOverdueActiveUnrealized, left: rp + overdueUnrealized, bg: VM_FISICO.active,  label: nonOverdueActiveUnrealized > 0 ? `${Math.round(nonOverdueActiveUnrealized)}%` : null, labelColor: VM_FISICO.text2 },
@@ -185,7 +185,7 @@ const buildFisicoSegments = (realizadoPct, ativoPct, overduePct = 0, overdueReal
 
 const buildSegments = (vizMode, { solicitado, recebido, gasto, realizadoPct, ativoPct, overduePct, overdueRealizadoPct, forceWarn = false }) =>
   vizMode === 'fisico'
-    ? buildFisicoSegments(realizadoPct || 0, ativoPct || 0, overduePct || 0, overdueRealizadoPct || 0, false)
+    ? buildFisicoSegments(realizadoPct || 0, ativoPct || 0, overduePct || 0, overdueRealizadoPct || 0, true)
     : buildFinancialSegments(solicitado || 0, recebido || 0, gasto || 0, forceWarn);
 
 // ── ProgressCard — unified parametric card/bar component ──────────────
@@ -280,6 +280,7 @@ const ProgressCard = ({
               width: `${pct}%`,
               background: seg.bg,
               overflow: 'hidden',
+              zIndex: i,
               transition: 'width 0.35s var(--ease-out)',
             }}>
               {seg.label && pct > 0 && (
@@ -291,7 +292,6 @@ const ProgressCard = ({
                   color: seg.labelColor,
                   lineHeight: 1,
                   whiteSpace: 'nowrap',
-                  zIndex: 1,
                   userSelect: 'none',
                 }}>{seg.label}</span>
               )}

@@ -229,12 +229,12 @@ const MonthCard = ({ etapa, index, onChange, isReadOnly, vizMode = 'financeiro',
     seg3LabelColor = VM_FISICO.text1;
   } else {
     // future months: neutral planned, blue realized
-    seg2Bg = VM_NEUTRAL.text1;  seg2LabelColor = VM_NEUTRAL.text2;
+    seg2Bg = 'rgb(189, 198, 214)';  seg2LabelColor = 'rgb(143, 153, 162)';
     seg3LabelColor = VM_FISICO.text1;
   }
 
   const fisicoSegments = [
-    { pct: 100,     left: 0,                   bg: VM_NEUTRAL.bg3,    label: null,                                                            labelColor: VM_NEUTRAL.text1 },
+    { pct: 100,     left: 0,                   bg: 'rgba(189, 198, 214, 0.3)', label: null,                                                   labelColor: VM_NEUTRAL.text1 },
     { pct: seg3Pct, left: startPct,            bg: VM_FISICO.complete, label: seg3Pct > 0 ? `${Math.round(seg3Pct)}%` : null,                 labelColor: seg3LabelColor },
     { pct: seg4Pct, left: startPct + seg3Pct,  bg: seg2Bg,            label: seg4Pct > 0 ? `${Math.round(seg4Pct)}%` : null,                 labelColor: seg2LabelColor },
   ];

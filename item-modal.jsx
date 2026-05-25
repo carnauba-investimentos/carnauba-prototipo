@@ -315,14 +315,14 @@ const ItemDrawer = ({ item, isOpen, onClose, onSave, onDelete, vizMode = 'financ
     <div style={{ minWidth: 220 }}>
       <SegBar
         segments={[
-          { pct: 100,                       left: 0,                                                  bg: VM_NEUTRAL.bg3,    label: null,                                                                              labelColor: VM_NEUTRAL.text1 },
+          { pct: 100,                       left: 0,                                                  bg: VM_NEUTRAL.bg3,    label: fisicoAtivoPct < 100 ? `${Math.round(100 - fisicoAtivoPct)}%` : null,              labelColor: 'rgb(143, 153, 162)' },
           { pct: fisicoRealizadoPct,         left: 0,                                                  bg: VM_FISICO.complete, label: fisicoRealizadoPct > 0 ? `${Math.round(fisicoRealizadoPct)}%` : null,             labelColor: VM_FISICO.text1 },
           { pct: fisicoOverdueUnrealized,    left: fisicoRealizadoPct,                                 bg: VM_WARNING.active, label: fisicoOverdueUnrealized > 0 ? `${Math.round(fisicoOverdueUnrealized)}%` : null,    labelColor: VM_WARNING.text2 },
           { pct: fisicoNonOverdueUnrealized, left: fisicoRealizadoPct + fisicoOverdueUnrealized,       bg: VM_FISICO.active,  label: fisicoNonOverdueUnrealized > 0 ? `${Math.round(fisicoNonOverdueUnrealized)}%` : null, labelColor: VM_FISICO.text2 },
         ]}
         height={28}
         borderRadius={8}
-        label="PROGRESSO DO ITEM"
+        label="EXECUÇÃO TOTAL DO ITEM"
       />
     </div>
   );

@@ -39,10 +39,6 @@ const ValueTag = ({ label, value, bg, color, style: extraStyle }) => (
 // segments[1] and [2] are colored fills that can start at an arbitrary `left` offset.
 // Props: segments [{ pct, left?, bg, label?, labelColor? }], height, borderRadius, label
 const SegBar = ({ segments = [], height = 22, borderRadius = 6, label }) => {
-  const bgSeg   = segments[0] || { bg: VM_NEUTRAL.bg3 };
-  const fills   = segments.slice(1);
-  const allSegs = segments; // used for labels only
-
   return (
     <div>
       {label && (
@@ -54,52 +50,38 @@ const SegBar = ({ segments = [], height = 22, borderRadius = 6, label }) => {
           {label}
         </div>
       )}
-      {/* Container IS the background — overflow:hidden clips children to rounded rect */}
-      <div style={{
-        position: 'relative', height, borderRadius, overflow: 'hidden',
-        background: bgSeg.bg,
-        minWidth: 160,
-      }}>
-        {/* Colored fill divs — no borderRadius so they fill flush against each other */}
-        {fills.map((seg, i) => {
+      {/* Container clips all segments to rounded rect */}
+      <div style={{ position: 'relative', height, borderRadius, overflow: 'hidden', minWidth: 160 }}>
+        {segments.map((seg, i) => {
           const left  = Math.min(100, Math.max(0, seg.left || 0));
           const width = Math.min(100 - left, Math.max(0, seg.pct || 0));
-          if (width <= 0) return null;
+          if (width <= 0 && i > 0) return null;
           return (
             <div
               key={i}
               style={{
                 position: 'absolute', left: `${left}%`, top: 0, bottom: 0,
-                width: `${width}%`,
+                width: i === 0 ? '100%' : `${width}%`,
                 background: seg.bg,
+                overflow: 'hidden',
+                zIndex: i,
                 transition: 'width 0.35s ease-out, left 0.35s ease-out',
               }}
-            />
-          );
-        })}
-        {/* Labels — at the right edge of each segment (bg + fills) */}
-        {allSegs.map((seg, i) => {
-          if (!seg.label) return null;
-          const rightEdgePct = Math.min(100, (seg.left || 0) + (seg.pct || 0));
-          return (
-            <div
-              key={`lbl-${i}`}
-              style={{
-                position: 'absolute', top: 0, bottom: 0,
-                left: `${rightEdgePct}%`,
-                transform: 'translateX(-100%)',
-                display: 'flex', alignItems: 'center',
-                paddingRight: 6,
-                fontSize: seg.labelSize || 9,
-                fontWeight: 700,
-                fontFamily: 'var(--font-mono)',
-                color: seg.labelColor || VM_NEUTRAL.text1,
-                pointerEvents: 'none',
-                whiteSpace: 'nowrap',
-                zIndex: i + 2,
-              }}
             >
-              {seg.label}
+              {seg.label && (
+                <span style={{
+                  position: 'absolute', bottom: 0, top: 0, right: 6,
+                  display: 'flex', alignItems: 'center',
+                  fontSize: seg.labelSize || 9,
+                  fontWeight: 700,
+                  fontFamily: 'var(--font-mono)',
+                  color: seg.labelColor || VM_NEUTRAL.text1,
+                  whiteSpace: 'nowrap',
+                  userSelect: 'none',
+                }}>
+                  {seg.label}
+                </span>
+              )}
             </div>
           );
         })}

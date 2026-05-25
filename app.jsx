@@ -367,7 +367,7 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
       if (!isStarted) {
         // Future planning: gray bar with scope % label
         segments = [
-          { pct: 100, left: 0, bg: VM_NEUTRAL.bg3, label: scopeLabel, labelColor: VM_NEUTRAL.text2 },
+          { pct: 100, left: 0, bg: VM_NEUTRAL.bg3, label: scopeLabel, labelColor: VM_NEUTRAL.text1 },
         ];
       } else {
         const unrealizedBg    = warn ? VM_WARNING.active : VM_FISICO.active;
@@ -468,7 +468,7 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
       const allFuture = rp === 0 && overdueUnrealized === 0 && nonOverdueUnrealized === 0;
 
       segments = [
-        { pct: 100,                  left: 0,                        bg: VM_NEUTRAL.bg3,    label: allFuture ? `${avgTotal}%` : null,                                 labelColor: VM_NEUTRAL.text2 },
+        { pct: 100,                  left: 0,                        bg: VM_NEUTRAL.bg3,    label: allFuture ? `${avgTotal}%` : null,                                 labelColor: VM_NEUTRAL.text1 },
         { pct: rp,                   left: 0,                        bg: VM_FISICO.complete, label: rp > 0 ? `${avgRealizado}%` : null,                                labelColor: VM_FISICO.text1 },
         { pct: overdueUnrealized,    left: rp,                       bg: VM_WARNING.active, label: overdueUnrealized > 0 ? `${avgOverdueUnrealized}%` : null,          labelColor: VM_WARNING.text2 },
         { pct: nonOverdueUnrealized, left: rp + overdueUnrealized,   bg: VM_FISICO.active,  label: nonOverdueUnrealized > 0 ? `${avgNonOverdueUnrealized}%` : null,   labelColor: VM_FISICO.text2 },
