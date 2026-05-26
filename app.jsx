@@ -331,6 +331,8 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
   const todayX       = Math.floor((today - startDate) / 86400000) * PX_DAY;
   const getX         = (iso) => !iso ? 0 : Math.floor((new Date(iso + 'T00:00:00') - startDate) / 86400000) * PX_DAY;
   const getCol       = (mes) => cols.find(c => c.mesKey === mes);
+  const todayMesKey  = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  const todayCol     = cols.find(c => c.mesKey === todayMesKey);
   const getMonthColW = (mes) => { const col = getCol(mes); return col ? col.width : 80; };
 
   useEffect(() => {
@@ -343,12 +345,39 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
   // Title area width reserved at the left of each GanttItemCard
   const GANTT_ITEM_TITLE_W = 90;
   const GANTT_BAR_H        = 24;
+  const EXTRA_ROW_H        = GANTT_BAR_H + 12; // 36px per additional bar row
 
-  const GanttItemBar = ({ etapa, itemOriginX, vizMode = 'financeiro' }) => {
+  // ── Row-layout helpers ───────────────────────────────────────────────
+  const getItemBarRows = (item, vm) => {
+    const latest = item.versions[item.versions.length - 1];
+    const etapas = latest.etapas.filter(e => e.mes && getCol(e.mes));
+    const sorted = etapas.slice().sort((a, b) => (a.mes < b.mes ? -1 : 1));
+    if (vm !== 'fisico') return sorted.map(e => ({ etapa: e, row: 0, stretched: false }));
+    const isPast = (e) => { const [y, m] = e.mes.split('-').map(Number); return new Date(y, m, 0) < new Date(); };
+    let currentRow = 0;
+    return sorted.map(e => {
+      const past = isPast(e);
+      const entry = { etapa: e, row: currentRow, stretched: past };
+      if (past) currentRow++;
+      return entry;
+    });
+  };
+
+  const getItemRowH = (item, vm) => {
+    const rows = getItemBarRows(item, vm);
+    const numRows = rows.length ? rows[rows.length - 1].row + 1 : 1;
+    return ITEM_ROW_H + (numRows - 1) * EXTRA_ROW_H;
+  };
+
+  const GanttItemBar = ({ etapa, itemOriginX, vizMode = 'financeiro', row = 0, numRows = 1, barCardH = ITEM_ROW_H - 18, stretched = false }) => {
     const col = getCol(etapa.mes);
     if (!col) return null;
-    const barLeft  = col.x - itemOriginX + 8;
-    const barWidth = col.width - 16;
+    const barLeft = col.x - itemOriginX + 8;
+    const barWidth = (stretched && todayCol && todayCol.mesKey > col.mesKey)
+      ? todayCol.x + todayCol.width - col.x - 16
+      : col.width - 16;
+    const slotH  = barCardH / numRows;
+    const barTop = row * slotH + (slotH - GANTT_BAR_H) / 2;
 
     let segments;
     if (vizMode === 'fisico') {
@@ -394,7 +423,7 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
       const realizado = realizedAbs;
       const atraso    = warn ? unrealizedAbs : 0;
       return (
-        <div style={{ position: 'absolute', left: barLeft, width: barWidth, height: GANTT_BAR_H, top: '50%', transform: 'translateY(-50%)' }}>
+        <div style={{ position: 'absolute', left: barLeft, width: barWidth, height: GANTT_BAR_H, top: barTop }}>
           <FisicoTooltip futuro={futuro} planejado={planejado} realizado={realizado} atraso={atraso} wrapperStyle={{ height: GANTT_BAR_H }}>
             <div style={{ height: GANTT_BAR_H, borderRadius: 8, overflow: 'hidden' }}>
               <ProgressCard segments={segments} minHeight={GANTT_BAR_H} borderRadius={8} />
@@ -409,7 +438,7 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
       segments = buildFinancialSegments(budget, recebido, gasto);
       const _b = budget, _g = gasto, _r = recebido;
       return (
-        <div style={{ position: 'absolute', left: barLeft, width: barWidth, height: GANTT_BAR_H, top: '50%', transform: 'translateY(-50%)' }}>
+        <div style={{ position: 'absolute', left: barLeft, width: barWidth, height: GANTT_BAR_H, top: barTop }}>
           <Tooltip solicitado={_b} recebido={_r} gasto={_g} warn={_g > _r} wrapperStyle={{ height: GANTT_BAR_H }}>
             <div style={{ height: GANTT_BAR_H, borderRadius: 8, overflow: 'hidden' }}>
               <ProgressCard segments={segments} minHeight={GANTT_BAR_H} borderRadius={8} />
@@ -420,8 +449,32 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
     }
   };
 
+  const getGroupBarRows = (grupo, vm) => {
+    const allMonths = new Set();
+    grupo.items.forEach(item => {
+      const latest = item.versions[item.versions.length - 1];
+      latest.etapas.forEach(e => { if (e.mes && getCol(e.mes)) allMonths.add(e.mes); });
+    });
+    const sortedMonths = Array.from(allMonths).sort();
+    if (vm !== 'fisico') return sortedMonths.map(mes => ({ mes, row: 0, stretched: false }));
+    const isPast = (mes) => { const [y, m] = mes.split('-').map(Number); return new Date(y, m, 0) < new Date(); };
+    let currentRow = 0;
+    return sortedMonths.map(mes => {
+      const past = isPast(mes);
+      const entry = { mes, row: currentRow, stretched: past };
+      if (past) currentRow++;
+      return entry;
+    });
+  };
+
+  const getGroupHeaderH = (grupo, vm) => {
+    const rows = getGroupBarRows(grupo, vm);
+    const numRows = rows.length ? rows[rows.length - 1].row + 1 : 1;
+    return GROUP_ROW_H + (numRows - 1) * EXTRA_ROW_H;
+  };
+
   // ── GanttGroupBar — aggregate bar for one month in a group ───────────
-  const GanttGroupBar = ({ grupo, mes, groupOriginX, vizMode = 'financeiro' }) => {
+  const GanttGroupBar = ({ grupo, mes, groupOriginX, vizMode = 'financeiro', row = 0, numRows = 1, headerBarAreaH = GROUP_ROW_H - 16, stretched = false }) => {
     const col = getCol(mes);
     if (!col) return null;
     let hasEtapas = false;
@@ -473,10 +526,14 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
         { pct: overdueUnrealized,    left: rp,                       bg: VM_WARNING.active, label: overdueUnrealized > 0 ? `${avgOverdueUnrealized}%` : null,          labelColor: VM_WARNING.text2 },
         { pct: nonOverdueUnrealized, left: rp + overdueUnrealized,   bg: VM_FISICO.active,  label: nonOverdueUnrealized > 0 ? `${avgNonOverdueUnrealized}%` : null,   labelColor: VM_FISICO.text2 },
       ];
-      const barLeft = col.x - groupOriginX + CARD_PAD + 8;
-      const barWidth = col.width - 16;
+      const barLeft  = col.x - groupOriginX + CARD_PAD + 8;
+      const barWidth = (stretched && todayCol && todayCol.mesKey > col.mesKey)
+        ? todayCol.x + todayCol.width - col.x - 16
+        : col.width - 16;
+      const slotH  = headerBarAreaH / numRows;
+      const barTop = row * slotH + (slotH - GANTT_BAR_H) / 2;
       return (
-        <div style={{ position: 'absolute', left: barLeft, width: barWidth, height: GANTT_BAR_H, top: '50%', transform: 'translateY(-50%)' }}>
+        <div style={{ position: 'absolute', left: barLeft, width: barWidth, height: GANTT_BAR_H, top: barTop }}>
           <FisicoTooltip futuro={avgFuturo} planejado={avgNonOverdueUnrealized} realizado={avgRealizado} atraso={avgOverdueUnrealized} wrapperStyle={{ height: GANTT_BAR_H }}>
             <div style={{ height: GANTT_BAR_H, borderRadius: 8, overflow: 'hidden' }}>
               <ProgressCard segments={segments} minHeight={GANTT_BAR_H} borderRadius={8} />
@@ -501,9 +558,13 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
       if (!hasEtapas) return null;
       segments = buildFinancialSegments(budget, recebidoSum, gasto, hasMonthOverrun);
       const barLeft  = col.x - groupOriginX + CARD_PAD + 8;
-      const barWidth = col.width - 16;
+      const barWidth = (stretched && todayCol && todayCol.mesKey > col.mesKey)
+        ? todayCol.x + todayCol.width - col.x - 16
+        : col.width - 16;
+      const slotH  = headerBarAreaH / numRows;
+      const barTop = row * slotH + (slotH - GANTT_BAR_H) / 2;
       return (
-        <div style={{ position: 'absolute', left: barLeft, width: barWidth, height: GANTT_BAR_H, top: '50%', transform: 'translateY(-50%)' }}>
+        <div style={{ position: 'absolute', left: barLeft, width: barWidth, height: GANTT_BAR_H, top: barTop }}>
           <Tooltip solicitado={budget} recebido={recebidoSum} gasto={gasto} warn={hasMonthOverrun || gasto > recebidoSum} wrapperStyle={{ height: GANTT_BAR_H }}>
             <div style={{ height: GANTT_BAR_H, borderRadius: 8, overflow: 'hidden' }}>
               <ProgressCard segments={segments} minHeight={GANTT_BAR_H} borderRadius={8} />
@@ -516,20 +577,31 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
   };
 
   // ── GanttItemCard — white card (bars only) + title to its left ───────
-  const GanttItemCard = ({ item, itemIndex, groupOriginX, onClick, vizMode = 'financeiro' }) => {
-    const latest       = item.versions[item.versions.length - 1];
-    const latestEtapas = latest.etapas.filter(e => e.mes && getCol(e.mes));
-    if (!latestEtapas.length) return null;
+  const GanttItemCard = ({ item, verticalOffset, groupOriginX, onClick, vizMode = 'financeiro' }) => {
+    const rowEntries = getItemBarRows(item, vizMode);
+    if (!rowEntries.length) return null;
 
-    const sorted      = latestEtapas.slice().sort((a, b) => a.mes < b.mes ? -1 : 1);
-    const firstCol    = getCol(sorted[0].mes);
-    const lastCol     = getCol(sorted[sorted.length - 1].mes);
+    const numRows  = rowEntries[rowEntries.length - 1].row + 1;
+    const barCardH = (ITEM_ROW_H - 18) + (numRows - 1) * EXTRA_ROW_H;
+    const itemRowH = ITEM_ROW_H + (numRows - 1) * EXTRA_ROW_H;
+
+    const firstCol = getCol(rowEntries[0].etapa.mes);
+
+    // Card width = rightmost edge any bar actually reaches
+    const maxBarRight = rowEntries.reduce((right, { etapa, stretched }) => {
+      const col = getCol(etapa.mes);
+      if (!col) return right;
+      const barRight = (stretched && todayCol && todayCol.mesKey > etapa.mes)
+        ? todayCol.x + todayCol.width
+        : col.x + col.width;
+      return Math.max(right, barRight);
+    }, 0);
+
     const cardLeft    = firstCol.x - groupOriginX + CARD_PAD;
-    const cardWidth   = lastCol.x + lastCol.width - firstCol.x;
-    const barCardH    = ITEM_ROW_H - 18;  // matches ItemCronograma height (row - top pad - bottom pad)
-    const rowStartY   = GROUP_ROW_H - 8 + itemIndex * ITEM_ROW_H;
-    const cardTop     = rowStartY + Math.round((ITEM_ROW_H - barCardH) / 2);
+    const cardWidth   = maxBarRight - firstCol.x;
+    const cardTop     = verticalOffset + Math.round((itemRowH - barCardH) / 2);
     const itemOriginX = firstCol.x;
+    const latest      = item.versions[item.versions.length - 1];
 
     return (
       <React.Fragment>
@@ -564,8 +636,17 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
           onMouseEnter={e => e.currentTarget.style.boxShadow = '0 3px 10px rgba(13,27,38,0.12)'}
           onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 4px rgba(13,27,38,0.06)'}
         >
-          {latestEtapas.map(etapa => (
-            <GanttItemBar key={etapa.id || etapa.mes} etapa={etapa} itemOriginX={itemOriginX} vizMode={vizMode} />
+          {rowEntries.map(({ etapa, row, stretched }) => (
+            <GanttItemBar
+              key={etapa.id || etapa.mes}
+              etapa={etapa}
+              itemOriginX={itemOriginX}
+              vizMode={vizMode}
+              row={row}
+              numRows={numRows}
+              barCardH={barCardH}
+              stretched={stretched}
+            />
           ))}
         </div>
       </React.Fragment>
@@ -587,8 +668,22 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
     const groupOriginX = firstCol.x;
     const cardLeft     = LEFT_COL_W + groupOriginX - CARD_PAD;
     const cardWidth    = lastCol.x + lastCol.width - groupOriginX + CARD_PAD * 2;
-    const headerH      = grupo.collapsed ? GROUP_ROW_H_COLLAPSED : GROUP_ROW_H;
-    const totalRows    = headerH + (grupo.collapsed ? 0 : grupo.items.length * ITEM_ROW_H + GROUP_FOOTER_ROW_H);
+    const headerH      = getGroupHeaderH(grupo, vizMode);
+
+    const groupRowEntries  = getGroupBarRows(grupo, vizMode);
+    const numGroupRows     = groupRowEntries.length ? groupRowEntries[groupRowEntries.length - 1].row + 1 : 1;
+    const headerBarAreaH   = headerH - 16;
+
+    const itemRowHeights = grupo.items.map(item => getItemRowH(item, vizMode));
+    const totalItemH     = itemRowHeights.reduce((s, h) => s + h, 0);
+    const totalRows      = headerH + (grupo.collapsed ? 0 : totalItemH + GROUP_FOOTER_ROW_H);
+
+    // Cumulative vertical offsets within the group card (relative to card top + headerH - 8)
+    const itemOffsets = itemRowHeights.reduce((acc, h, i) => {
+      acc.push(i === 0 ? headerH - 8 : acc[i - 1] + itemRowHeights[i - 1]);
+      return acc;
+    }, []);
+
     const titleAreaH   = headerH - 8;
 
     return (
@@ -619,9 +714,19 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
           pointerEvents: 'none', overflow: 'visible',
         }}>
           {/* Group bars — centered in header area */}
-          <div style={{ position: 'relative', height: headerH - 16, pointerEvents: 'auto' }}>
-            {sortedMonths.map(mes => (
-              <GanttGroupBar key={mes} grupo={grupo} mes={mes} groupOriginX={groupOriginX} vizMode={vizMode} />
+          <div style={{ position: 'relative', height: headerBarAreaH, pointerEvents: 'auto' }}>
+            {groupRowEntries.map(({ mes, row, stretched }) => (
+              <GanttGroupBar
+                key={mes}
+                grupo={grupo}
+                mes={mes}
+                groupOriginX={groupOriginX}
+                vizMode={vizMode}
+                row={row}
+                numRows={numGroupRows}
+                headerBarAreaH={headerBarAreaH}
+                stretched={stretched}
+              />
             ))}
           </div>
 
@@ -630,7 +735,7 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
             <GanttItemCard
               key={item.id}
               item={item}
-              itemIndex={iIdx}
+              verticalOffset={itemOffsets[iIdx]}
               groupOriginX={groupOriginX}
               vizMode={vizMode}
               onClick={onItemClick ? () => onItemClick(item, grupo.id) : undefined}
@@ -702,7 +807,7 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
             type="GROUP"
             renderClone={(provided, snapshot, rubric) => {
               const grupo = grupos[rubric.source.index];
-              const h = grupo.collapsed ? GROUP_ROW_H_COLLAPSED : GROUP_ROW_H;
+              const h = getGroupHeaderH(grupo, vizMode);
               return (
                 <div
                   ref={provided.innerRef}
@@ -733,7 +838,7 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
                         style={{ opacity: snapshot.isDragging ? 0.9 : 1, ...provided.draggableProps.style, position: 'relative', overflow: 'visible' }}
                       >
                         {/* Group header row */}
-                        <div style={{ display: 'flex', height: grupo.collapsed ? GROUP_ROW_H_COLLAPSED : GROUP_ROW_H }}>
+                        <div style={{ display: 'flex', height: getGroupHeaderH(grupo, vizMode) }}>
                           <div style={{
                             width: LEFT_COL_W, flexShrink: 0, position: 'sticky', left: 0, zIndex: 3,
                             background: 'var(--color-gray-100)',
@@ -763,7 +868,7 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
                                   ref={provided.innerRef}
                                   {...provided.draggableProps}
                                   {...provided.dragHandleProps}
-                                  style={{ ...provided.draggableProps.style, width: LEFT_COL_W, height: ITEM_ROW_H, padding: '0 8px', display: 'flex', alignItems: 'stretch', boxSizing: 'border-box' }}
+                                  style={{ ...provided.draggableProps.style, width: LEFT_COL_W, height: getItemRowH(item, vizMode), padding: '0 8px', display: 'flex', alignItems: 'stretch', boxSizing: 'border-box' }}
                                 >
                                   <div style={{ flex: 1, padding: '9px 8px' }}>
                                     <ItemCronograma
@@ -792,7 +897,7 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
                                         {...provided.draggableProps}
                                         style={{ opacity: snapshot.isDragging ? 0.88 : 1, ...provided.draggableProps.style }}
                                       >
-                                        <div style={{ display: 'flex', height: ITEM_ROW_H }}>
+                                        <div style={{ display: 'flex', height: getItemRowH(item, vizMode) }}>
                                           <div style={{
                                             width: LEFT_COL_W, flexShrink: 0, position: 'sticky', left: 0, zIndex: 3,
                                             background: 'var(--color-gray-100)',
