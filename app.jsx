@@ -664,10 +664,20 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
     if (!sortedMonths.length) return null;
 
     const firstCol     = getCol(sortedMonths[0]);
-    const lastCol      = getCol(sortedMonths[sortedMonths.length - 1]);
     const groupOriginX = firstCol.x;
     const cardLeft     = LEFT_COL_W + groupOriginX - CARD_PAD;
-    const cardWidth    = lastCol.x + lastCol.width - groupOriginX + CARD_PAD * 2;
+
+    // Card width must cover the rightmost edge of any bar (stretched bars reach todayCol)
+    const maxGroupRight = sortedMonths.reduce((right, mes) => {
+      const col = getCol(mes);
+      if (!col) return right;
+      const isPast = (() => { const [y, m] = mes.split('-').map(Number); return new Date(y, m, 0) < new Date(); })();
+      const barRight = (isPast && todayCol && todayCol.mesKey > mes)
+        ? todayCol.x + todayCol.width
+        : col.x + col.width;
+      return Math.max(right, barRight);
+    }, 0);
+    const cardWidth    = maxGroupRight - groupOriginX + CARD_PAD * 2;
     const headerH      = getGroupHeaderH(grupo, vizMode);
 
     const groupRowEntries  = getGroupBarRows(grupo, vizMode);
