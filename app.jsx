@@ -92,7 +92,7 @@ const HEADER_H           = 40;
 const GROUP_ROW_H          = 80;  // group header bar row
 const GROUP_ROW_H_COLLAPSED = 80; // same: collapsed shows same bar
 const GROUP_FOOTER_ROW_H   = 40;  // footer row
-const ITEM_ROW_H         = 68;   // item bar row
+const ITEM_ROW_H         = 80;   // item bar row
 
 // ── Icons ─────────────────────────────────────────────────────────
 const IconCalendar = () =>
@@ -319,7 +319,7 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
   while (cur < endDate) {
     const daysInMonth = new Date(cur.getFullYear(), cur.getMonth() + 1, 0).getDate();
     cols.push({
-      label:  cur.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }).replace('.', ''),
+      label:  cur.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '').toLowerCase() + '/' + String(cur.getFullYear()).slice(-2),
       mesKey: `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}`,
       x:      Math.floor((cur - startDate) / 86400000) * PX_DAY,
       width:  daysInMonth * PX_DAY,
@@ -345,7 +345,8 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
   // Title area width reserved at the left of each GanttItemCard
   const GANTT_ITEM_TITLE_W = 90;
   const GANTT_BAR_H        = 24;
-  const EXTRA_ROW_H        = GANTT_BAR_H + 12; // 36px per additional bar row
+  const GANTT_LABEL_H      = 13; // month label above each bar (font + gap)
+  const EXTRA_ROW_H        = GANTT_BAR_H + GANTT_LABEL_H + 10; // 47px per additional bar row
 
   // ── Row-layout helpers ───────────────────────────────────────────────
   const getItemBarRows = (item, vm) => {
@@ -376,8 +377,18 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
     const barWidth = (stretched && todayCol && todayCol.mesKey > col.mesKey)
       ? todayCol.x + todayCol.width - col.x - 16
       : col.width - 16;
-    const slotH  = barCardH / numRows;
-    const barTop = row * slotH + (slotH - GANTT_BAR_H) / 2;
+    const slotH    = barCardH / numRows;
+    const barTop   = row * slotH + GANTT_LABEL_H + Math.max(0, (slotH - GANTT_LABEL_H - GANTT_BAR_H) / 2);
+    const labelTop = barTop - GANTT_LABEL_H;
+    const monthLabel = col.label;
+
+    // Label color mirrors the dominant segment color of this bar
+    const etapaStart  = new Date(mesToStartISO(etapa.mes) + 'T00:00:00');
+    const isStarted   = etapaStart <= today;
+    const warnEtapa   = etapaShowsWarning(etapa);
+    const labelColor  = vizMode === 'fisico'
+      ? (!isStarted ? VM_NEUTRAL.text1 : warnEtapa ? VM_WARNING.text2 : VM_FISICO.text2)
+      : ((Number(etapa.gastoMaterial || 0) + Number(etapa.gastoMaoDeObra || 0)) > etapaRecebido(etapa) ? VM_WARNING.text2 : VM_NEUTRAL.text2);
 
     let segments;
     if (vizMode === 'fisico') {
@@ -423,13 +434,18 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
       const realizado = realizedAbs;
       const atraso    = warn ? unrealizedAbs : 0;
       return (
-        <div style={{ position: 'absolute', left: barLeft, width: barWidth, height: GANTT_BAR_H, top: barTop }}>
-          <FisicoTooltip futuro={futuro} planejado={planejado} realizado={realizado} atraso={atraso} wrapperStyle={{ height: GANTT_BAR_H }}>
-            <div style={{ height: GANTT_BAR_H, borderRadius: 8, overflow: 'hidden' }}>
-              <ProgressCard segments={segments} minHeight={GANTT_BAR_H} borderRadius={8} />
-            </div>
-          </FisicoTooltip>
-        </div>
+        <React.Fragment>
+          <div style={{ position: 'absolute', left: barLeft + 2, top: labelTop, fontSize: 9, fontWeight: 700, fontFamily: 'var(--font-display)', color: labelColor, lineHeight: `${GANTT_LABEL_H}px`, whiteSpace: 'nowrap', pointerEvents: 'none', userSelect: 'none' }}>
+            {monthLabel}
+          </div>
+          <div style={{ position: 'absolute', left: barLeft, width: barWidth, height: GANTT_BAR_H, top: barTop }}>
+            <FisicoTooltip futuro={futuro} planejado={planejado} realizado={realizado} atraso={atraso} wrapperStyle={{ height: GANTT_BAR_H }}>
+              <div style={{ height: GANTT_BAR_H, borderRadius: 8, overflow: 'hidden' }}>
+                <ProgressCard segments={segments} minHeight={GANTT_BAR_H} borderRadius={8} />
+              </div>
+            </FisicoTooltip>
+          </div>
+        </React.Fragment>
       );
     } else {
       const budget   = (Number(etapa.orcamentoMaterial) || 0) + (Number(etapa.orcamentoMaoDeObra) || 0);
@@ -438,13 +454,18 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
       segments = buildFinancialSegments(budget, recebido, gasto);
       const _b = budget, _g = gasto, _r = recebido;
       return (
-        <div style={{ position: 'absolute', left: barLeft, width: barWidth, height: GANTT_BAR_H, top: barTop }}>
-          <Tooltip solicitado={_b} recebido={_r} gasto={_g} warn={_g > _r} wrapperStyle={{ height: GANTT_BAR_H }}>
-            <div style={{ height: GANTT_BAR_H, borderRadius: 8, overflow: 'hidden' }}>
-              <ProgressCard segments={segments} minHeight={GANTT_BAR_H} borderRadius={8} />
-            </div>
-          </Tooltip>
-        </div>
+        <React.Fragment>
+          <div style={{ position: 'absolute', left: barLeft + 2, top: labelTop, fontSize: 9, fontWeight: 700, fontFamily: 'var(--font-display)', color: labelColor, lineHeight: `${GANTT_LABEL_H}px`, whiteSpace: 'nowrap', pointerEvents: 'none', userSelect: 'none' }}>
+            {monthLabel}
+          </div>
+          <div style={{ position: 'absolute', left: barLeft, width: barWidth, height: GANTT_BAR_H, top: barTop }}>
+            <Tooltip solicitado={_b} recebido={_r} gasto={_g} warn={_g > _r} wrapperStyle={{ height: GANTT_BAR_H }}>
+              <div style={{ height: GANTT_BAR_H, borderRadius: 8, overflow: 'hidden' }}>
+                <ProgressCard segments={segments} minHeight={GANTT_BAR_H} borderRadius={8} />
+              </div>
+            </Tooltip>
+          </div>
+        </React.Fragment>
       );
     }
   };
@@ -526,20 +547,27 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
         { pct: overdueUnrealized,    left: rp,                       bg: VM_WARNING.active, label: overdueUnrealized > 0 ? `${avgOverdueUnrealized}%` : null,          labelColor: VM_WARNING.text2 },
         { pct: nonOverdueUnrealized, left: rp + overdueUnrealized,   bg: VM_FISICO.active,  label: nonOverdueUnrealized > 0 ? `${avgNonOverdueUnrealized}%` : null,   labelColor: VM_FISICO.text2 },
       ];
-      const barLeft  = col.x - groupOriginX + CARD_PAD + 8;
-      const barWidth = (stretched && todayCol && todayCol.mesKey > col.mesKey)
+      const barLeft    = col.x - groupOriginX + CARD_PAD + 8;
+      const barWidth   = (stretched && todayCol && todayCol.mesKey > col.mesKey)
         ? todayCol.x + todayCol.width - col.x - 16
         : col.width - 16;
-      const slotH  = headerBarAreaH / numRows;
-      const barTop = row * slotH + (slotH - GANTT_BAR_H) / 2;
+      const slotH      = headerBarAreaH / numRows;
+      const barTop     = row * slotH + GANTT_LABEL_H + Math.max(0, (slotH - GANTT_LABEL_H - GANTT_BAR_H) / 2);
+      const labelTop   = barTop - GANTT_LABEL_H;
+      const grpLabelColor = mesStart > today ? VM_NEUTRAL.text1 : overduePct > 0 ? VM_WARNING.text2 : VM_FISICO.text2;
       return (
-        <div style={{ position: 'absolute', left: barLeft, width: barWidth, height: GANTT_BAR_H, top: barTop }}>
-          <FisicoTooltip futuro={avgFuturo} planejado={avgNonOverdueUnrealized} realizado={avgRealizado} atraso={avgOverdueUnrealized} wrapperStyle={{ height: GANTT_BAR_H }}>
-            <div style={{ height: GANTT_BAR_H, borderRadius: 8, overflow: 'hidden' }}>
-              <ProgressCard segments={segments} minHeight={GANTT_BAR_H} borderRadius={8} />
-            </div>
-          </FisicoTooltip>
-        </div>
+        <React.Fragment>
+          <div style={{ position: 'absolute', left: barLeft + 2, top: labelTop, fontSize: 9, fontWeight: 700, fontFamily: 'var(--font-display)', color: grpLabelColor, lineHeight: `${GANTT_LABEL_H}px`, whiteSpace: 'nowrap', pointerEvents: 'none', userSelect: 'none' }}>
+            {col.label}
+          </div>
+          <div style={{ position: 'absolute', left: barLeft, width: barWidth, height: GANTT_BAR_H, top: barTop }}>
+            <FisicoTooltip futuro={avgFuturo} planejado={avgNonOverdueUnrealized} realizado={avgRealizado} atraso={avgOverdueUnrealized} wrapperStyle={{ height: GANTT_BAR_H }}>
+              <div style={{ height: GANTT_BAR_H, borderRadius: 8, overflow: 'hidden' }}>
+                <ProgressCard segments={segments} minHeight={GANTT_BAR_H} borderRadius={8} />
+              </div>
+            </FisicoTooltip>
+          </div>
+        </React.Fragment>
       );
     } else {
       let budget = 0, recebidoSum = 0, gasto = 0, hasMonthOverrun = false;
@@ -557,20 +585,27 @@ const GanttChart = ({ grupos, onItemClick, onAddItemToGroup, onToggleGroup, onRe
       });
       if (!hasEtapas) return null;
       segments = buildFinancialSegments(budget, recebidoSum, gasto, hasMonthOverrun);
-      const barLeft  = col.x - groupOriginX + CARD_PAD + 8;
-      const barWidth = (stretched && todayCol && todayCol.mesKey > col.mesKey)
+      const barLeft     = col.x - groupOriginX + CARD_PAD + 8;
+      const barWidth    = (stretched && todayCol && todayCol.mesKey > col.mesKey)
         ? todayCol.x + todayCol.width - col.x - 16
         : col.width - 16;
-      const slotH  = headerBarAreaH / numRows;
-      const barTop = row * slotH + (slotH - GANTT_BAR_H) / 2;
+      const slotH       = headerBarAreaH / numRows;
+      const barTop      = row * slotH + GANTT_LABEL_H + Math.max(0, (slotH - GANTT_LABEL_H - GANTT_BAR_H) / 2);
+      const labelTop    = barTop - GANTT_LABEL_H;
+      const finLabelColor = (hasMonthOverrun || gasto > recebidoSum) ? VM_WARNING.text2 : VM_NEUTRAL.text2;
       return (
-        <div style={{ position: 'absolute', left: barLeft, width: barWidth, height: GANTT_BAR_H, top: barTop }}>
-          <Tooltip solicitado={budget} recebido={recebidoSum} gasto={gasto} warn={hasMonthOverrun || gasto > recebidoSum} wrapperStyle={{ height: GANTT_BAR_H }}>
-            <div style={{ height: GANTT_BAR_H, borderRadius: 8, overflow: 'hidden' }}>
-              <ProgressCard segments={segments} minHeight={GANTT_BAR_H} borderRadius={8} />
-            </div>
-          </Tooltip>
-        </div>
+        <React.Fragment>
+          <div style={{ position: 'absolute', left: barLeft + 2, top: labelTop, fontSize: 9, fontWeight: 700, fontFamily: 'var(--font-display)', color: finLabelColor, lineHeight: `${GANTT_LABEL_H}px`, whiteSpace: 'nowrap', pointerEvents: 'none', userSelect: 'none' }}>
+            {col.label}
+          </div>
+          <div style={{ position: 'absolute', left: barLeft, width: barWidth, height: GANTT_BAR_H, top: barTop }}>
+            <Tooltip solicitado={budget} recebido={recebidoSum} gasto={gasto} warn={hasMonthOverrun || gasto > recebidoSum} wrapperStyle={{ height: GANTT_BAR_H }}>
+              <div style={{ height: GANTT_BAR_H, borderRadius: 8, overflow: 'hidden' }}>
+                <ProgressCard segments={segments} minHeight={GANTT_BAR_H} borderRadius={8} />
+              </div>
+            </Tooltip>
+          </div>
+        </React.Fragment>
       );
     }
 
